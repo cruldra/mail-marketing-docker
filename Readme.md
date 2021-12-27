@@ -12,25 +12,18 @@ mysql数据库,[phplist](#phplist)会用到
 
 ## 构建及启动
 ```bash
-# 开发环境构建
 mkdir -p /app && \
 cd /app && \
-git clone https://cruldra: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@github.com/cruldra/wwmh-docker.git && \
-cd /app/wwmh-docker/alipay && \
-source dev.sh && \
-docker-compose build  --build-arg VERSION="1.0.0"   --no-cache 
+git clone https://cruldra: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@github.com/cruldra/mail-marketing-docker.git
+```
+然后在``Makefile``文件中修改用于下载``phplist``程序的链接及版本
+```bash
+# 构建及启动
+make all
 
-# 生产环境构建
-echo 1 > /var/log/alipay.log && \
-rm -rf /app/wwmh-docker || true && \
-mkdir -p /app && \
-cd /app && \
-git clone https://cruldra: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@github.com/cruldra/wwmh-docker.git && \
-cd /app/wwmh-docker/alipay && \
-source prod.sh && \
-docker-compose build  --build-arg VERSION="1.0.0" --no-cache 
+# 仅构建
+make build
 
-# 启动/重启
-cd /app/wwmh-docker/alipay && \
-source prod.sh && \
-docker-compose  up -d
+# 仅启动
+make up
+```
