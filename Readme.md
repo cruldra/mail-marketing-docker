@@ -9,6 +9,8 @@
 ### [mysql](https://hub.docker.com/layers/mysql/library/mysql/5.5.62/images/sha256-d404d78aa797c87c255e5ae2beb5d8d0e4d095f930b1f20dc208eaa957477b74)
 mysql数据库,[phplist](#phplist)会用到
 
+### [phpmyadmin](https://hub.docker.com/r/phpmyadmin/phpmyadmin)
+mysql web管理界面
 
 ## 构建及启动
 ```bash
