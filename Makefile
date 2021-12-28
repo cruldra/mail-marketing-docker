@@ -3,6 +3,8 @@ PHPLIST_VERSION = 3.6.6
 
 all: build up
 
+ui:
+
 build:
 		docker-compose build \
 		--build-arg VERSION=$(PHPLIST_VERSION) \
