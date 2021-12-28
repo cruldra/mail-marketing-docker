@@ -1,5 +1,30 @@
 version: "3.7"
 services:
+  mailserver:
+    image: docker.io/mailserver/docker-mailserver:latest
+    container_name: mailserver
+    dns: 1.1.1.1
+    hostname: mail
+    domainname: hasaiki.xyz
+    env_file: mailserver.env
+    ports:
+      - "25:25"    # SMTP  (explicit TLS => STARTTLS)
+      - "143:143"  # IMAP4 (explicit TLS => STARTTLS)
+      - "465:465"  # ESMTP (implicit TLS)
+      - "587:587"  # ESMTP (explicit TLS => STARTTLS)
+      - "993:993"  # IMAP4 (implicit TLS)
+    volumes:
+      - ./.mailserver-data/dms/mail-data/:/var/mail/
+      - ./.mailserver-data/dms/mail-state/:/var/mail-state/
+      - ./.mailserver-data/dms/mail-logs/:/var/log/mail/
+      - ./.mailserver-data/dms/config/:/tmp/docker-mailserver/
+      - /etc/localtime:/etc/localtime:ro
+      - ./config/cert:/tmp/ssl:ro
+    restart: always
+    stop_grace_period: 1m
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
   phplist:
     build: ./phplist
     container_name: phplist

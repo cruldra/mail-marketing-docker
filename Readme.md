@@ -29,3 +29,5 @@ make build
 # 仅启动
 make up
 ```
+
+- [ ] 域名管理cli
