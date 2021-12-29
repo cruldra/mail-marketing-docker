@@ -4,7 +4,8 @@ PHPLIST_VERSION = 3.6.6
 all: build up
 
 ui:
-
+	docker build -t 'dongjak/mail-marketing-docker-setupui:latest' ./setupui && \
+	docker run --name mail-marketing-docker-setupui -v $PWD:/app/main -p 5001:5001 dongjak/mail-marketing-docker-setupui:latest
 build:
 		docker-compose build \
 		--build-arg VERSION=$(PHPLIST_VERSION) \
