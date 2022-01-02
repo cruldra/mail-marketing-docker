@@ -25,11 +25,8 @@ cd /app && \
 git clone https://cruldra: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@github.com/cruldra/mail-marketing-docker.git
 ```
 ### 使用可视化界面
-
 ```bash
-apt install python3-virtualenv && \
-
-
+make ui
 ```
 
 

@@ -4,8 +4,11 @@ PHPLIST_VERSION = 3.6.6
 all: build up
 
 ui:
-	docker build -t 'dongjak/mail-marketing-docker-setupui:latest' ./setupui && \
-	docker run --name mail-marketing-docker-setupui -v $PWD:/app/main -p 5001:5001 -p 143:143 -p 465:465 -p 587:587 -p 993:993 dongjak/mail-marketing-docker-setupui:latest
+	cd setupui && \
+	docker run  --rm --name create_venv -v $(pwd):/app continuumio/miniconda3 conda create  -p /app/.venv python=3.9 && \
+    .venv/bin/python -m pip install --no-cache-dir -r requirements.txt  && \
+    mkdir .logs || true && touch ./.logs/setupui.log || true && \
+    .venv/bin/python app.py
 build:
 		docker-compose build \
 		--build-arg VERSION=$(PHPLIST_VERSION) \
