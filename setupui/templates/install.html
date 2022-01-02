@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <title>安装进度</title>
+    <style>
+        .bg-purple {
+            background: white;
+        }
+
+        .grid-content {
+            border-radius: 4px;
+            min-height: 36px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-row :gutter="20">
+        <el-col :span="8">
+            <div class="grid-content bg-purple"></div>
+        </el-col>
+        <el-col :span="8">
+            <el-timeline>
+                <el-timeline-item v-for="log in   logs" :color="log.color" :timestamp="log.time" placement="top">
+                    ${log.msg}
+                </el-timeline-item>
+            </el-timeline>
+        </el-col>
+        <el-col :span="8">
+            <div class="grid-content bg-purple"></div>
+        </el-col>
+    </el-row>
+</div>
+</body>
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script>
+    const logs = []
+    new Vue({
+        el: '#app',
+        delimiters: ['${', '}'],
+        data: function () {
+            return {
+                logs
+            }
+        },
+        mounted() {
+            const source = new EventSource('/install_progress');
+            source.addEventListener("installation_progress", (event) => {
+                console.log(event.data)
+                if (event.data !== "1") this.logs.push(JSON.parse(event.data))
+
+            })
+        }
+    })
+</script>
+</html>

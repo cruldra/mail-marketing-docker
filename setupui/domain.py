@@ -1,3 +1,4 @@
+from __future__ import annotations
 import re
 import this
 from types import DynamicClassAttribute
@@ -23,9 +24,11 @@ class DnsRecord:
     def __eq__(self, other):
         if self.id == other['id']:
             return True
-        elif (self.rdatatype.name == other['type'] and self.value == other['content'] and f"{self.name}.{self.host}" ==
-              other['name']):
-            return True
+        elif self.rdatatype.name == other['type'] and self.value == other['content']:
+            if f"{self.name}.{self.host}" == other['name']:
+                return True
+            elif self.name == "@" and self.host == other['name']:
+                return True
         return False
 
     @DynamicClassAttribute
@@ -117,9 +120,15 @@ class DnsManager(IDnsManager, Enum):
                     "name": record.name,
                     "type": record.rdatatype.name,
                     "content": record.value,
+                    "ttl": 1,
+                    'priority': 10
                 })
             # for rs in list(filter(predicate, dns_records)):
             #     self.deleteRecord(rs['id'])
+
+    @classmethod
+    def code_of(cls, code) -> DnsManager:
+        return [item for item in DnsManager.values() if item.code == code][0]
 
     @classmethod
     def values(cls):

@@ -244,4 +244,5 @@ function _main
   return 0
 }
 
-_main "${@:+$@}"
+#_main "${@:+$@}"
+_main "help"

@@ -2,7 +2,7 @@ import CloudFlare
 
 
 def main():
-    zone_name = 'hasaiki.xyz'
+    zone_name = '9l2z.xyz'
 
     cf = CloudFlare.CloudFlare(token='ozTikFmlS9bxLmnJqLc80uCLCeBAQvcXOJ8mTVeW')
 
@@ -38,6 +38,9 @@ def main():
         r_id = dns_record['id']
         print('\t', r_id, r_name, r_type, r_value)
 
+    cf.zones.dns_records.post(zone_id, data={
+                                             'name': '9l2z.xyz', 'type': 'MX', 'content': 'mail.9l2z.xyz',
+                                             'priority': 10, 'proxiable': False, 'proxied': False, 'ttl': 1 })
     exit(0)
 
 

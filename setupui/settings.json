@@ -14,7 +14,7 @@
             "url": "https://github.com/docker-mailserver/docker-mailserver"
         },
         {
-            "checked": true,
+            "checked": false,
             "description": "\u5f00\u6e90\u514d\u8d39\u7684\u90ae\u4ef6\u8425\u9500\u7ba1\u7406\u8f6f\u4ef6",
             "logo": "/static/phplist.jpeg",
             "msg": "\u4f60\u53ef\u4ee5\u5728\u6b64\u7ba1\u7406\u8ba2\u9605\u7528\u6237\u3001\u8425\u9500\u6d3b\u52a8\u5e76\u521b\u5efa\u8ba1\u5212",
@@ -22,7 +22,7 @@
             "url": "https://www.phplist.org/"
         },
         {
-            "checked": true,
+            "checked": false,
             "description": "\u6570\u636e\u5e93",
             "logo": "/static/database.png",
             "msg": "\u5728\u8fd9\u53f0\u673a\u5668\u4e0a\u5b58\u50a8\u4f60\u7684\u6240\u6709\u8425\u9500\u6570\u636e",
@@ -38,8 +38,8 @@
         "domainAndIp": {
             "ak": "",
             "dnsManager": "cloudflare",
-            "domain": "hasaiki.xyz",
-            "ip": "34.92.191.73",
+            "domain": "9l2z.xyz",
+            "ip": "194.5.78.236",
             "sk": "ozTikFmlS9bxLmnJqLc80uCLCeBAQvcXOJ8mTVeW"
         },
         "setDatabase": {
@@ -110,7 +110,7 @@
         "setMailServer": {}
     },
     "steps": {
-        "active": "setDatabase",
+        "active": "setMailServer",
         "value": [
             {
                 "description": "",
@@ -126,11 +126,6 @@
                 "description": "",
                 "key": "setMailServer",
                 "title": "\u8bbe\u7f6e\u90ae\u4ef6\u670d\u52a1\u5668"
-            },
-            {
-                "description": "",
-                "key": "setDatabase",
-                "title": "\u8bbe\u7f6e\u6570\u636e\u5e93"
             }
         ]
     }
