@@ -13,11 +13,26 @@ mysql数据库,[phplist](#phplist)会用到
 mysql web管理界面
 
 ## 构建及启动
+### 安装必需的软件
+```bash
+apt update && apt install -y git docker.io docker-compose
+```
+
+### 下载源代码
 ```bash
 mkdir -p /app && \
 cd /app && \
 git clone https://cruldra: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@github.com/cruldra/mail-marketing-docker.git
 ```
+### 使用可视化界面
+
+```bash
+apt install python3-virtualenv && \
+
+
+```
+
+
 然后在``Makefile``文件中修改用于下载``phplist``程序的链接及版本
 ```bash
 # 构建及启动
@@ -29,5 +44,3 @@ make build
 # 仅启动
 make up
 ```
-
-- [ ] 域名管理cli

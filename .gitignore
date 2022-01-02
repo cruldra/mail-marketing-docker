@@ -1,3 +1,5 @@
 .logs
 .idea
 .mysqldata
+setupui/redis.db
+setupui/redis.db.setting

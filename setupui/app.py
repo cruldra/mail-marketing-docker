@@ -1,13 +1,19 @@
+import asyncio
 import json
+import _thread
 
 from flask import Flask, render_template, request, url_for, redirect, Response
 from flask.json import htmlsafe_dumps
+from redislite import Redis
+from termcolor import colored
 
+import installer
 from db import Database
 from domain import DnsManager, get_dns_manager
 from tools import my_ip, write_content_to_file, read_file_content, indices
 
 app = Flask(__name__)
+red = Redis('./redis.db')
 
 
 @app.route("/")
@@ -26,7 +32,26 @@ def index():
 
 @app.route("/install")
 def install():
-    return render_template('result.html')
+    _thread.start_new_thread(installer.install, ())
+    return render_template('install.html')
+
+
+@app.route('/install_progress')
+def install_progress():
+    def format_sse(data, event=None) -> str:
+        msg = f'data: {data.decode("utf-8") if isinstance(data, bytes) else str(data)}\n\n'
+        if event is not None:
+            msg = f'event: {event}\n{msg}'
+        return msg
+
+    def event_stream():
+        pubsub = red.pubsub()
+        pubsub.subscribe('installation_progress')
+        for message in pubsub.listen():
+            yield format_sse(message['data'], 'installation_progress')
+
+    return Response(event_stream(),
+                    mimetype="text/event-stream")
 
 
 @app.route("/previous", methods=['POST'])
