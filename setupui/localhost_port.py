@@ -8,6 +8,8 @@ from urllib.parse import urlparse
 
 from pyngrok import ngrok, conf
 
+from log import logger
+
 
 class EchoHandler(BaseRequestHandler):
     def __init__(self, callback, *args, **keys):
@@ -52,6 +54,7 @@ class LocalHostPort:
         return self.__already_in_use__
 
     def test(self):
+        logger.info(f'测试本地端口 {self.__port__}')
         """测试此端口,返回一个字符串表示此端口的出入方向连通性
 
         仅允许传入数据: "i"
@@ -60,28 +63,35 @@ class LocalHostPort:
 
         在执行完测试后,用于测试的socket服务将会被终止
         """
+        # 检测测试服务器是否开启
+        if not self.__test_server__:
+            logger.info("重新创建测试服务器")
+            _thread.start_new_thread(self.__create_test_server__, ())
+
         # 创建到此端口的隧道
         conf.get_default().auth_token = "233TJDuRG2SBXuyMyiIXqBNvEwM_6LZrX2XhyWU4srFj5bGVs"
         conf.get_default().ngrok_path = "/usr/local/bin/ngrok"
-        tunnel = ngrok.connect(self.__port__, "tcp")
-        # 获取隧道链接
-        print(tunnel.public_url)
-        url = urlparse(tunnel.public_url)
-
-        test_client = socket(AF_INET, SOCK_STREAM)
-        test_client.settimeout(10)
-        test_client.connect((url.hostname, url.port))
         try:
-            test_client.send(b'Hello')
-            res = test_client.recv(8192)
-            if res == b"Hello":  # 如果能从隧道获取数据,表示端口允许出方向的流量
-                self.__allow_outgoing__ = True
-        except timeout:
-            self.__allow_outgoing__ = False
-        finally:
-            test_client.close()
-            self.__test_server__.server_close()
-            self.__test_server__.shutdown()
+            tunnel = ngrok.connect(self.__port__, "tcp")
+            # 获取隧道链接
+            logger.info(f"隧道链接: {tunnel.public_url}")
+            url = urlparse(tunnel.public_url)
+            test_client = socket(AF_INET, SOCK_STREAM)
+            test_client.settimeout(30)
+            try:
+                test_client.connect((url.hostname, url.port))
+                test_client.send(b'Hello')
+                res = test_client.recv(8192)
+                if res == b"Hello":  # 如果能从隧道获取数据,表示端口允许出方向的流量
+                    self.__allow_outgoing__ = True
+            except timeout:
+                self.__allow_outgoing__ = False
+            finally:
+                test_client.close()
+                self.__test_server__.server_close()
+                self.__test_server__.shutdown()
+        except:
+            logger.error(f"无法获取到端口{self.__port__}的隧道链接")
 
     def __create_test_server__(self):
         try:

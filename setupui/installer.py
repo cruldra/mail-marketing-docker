@@ -16,21 +16,14 @@ from redislite import Redis
 
 from domain import DnsManager, DnsRecord
 from localhost_port import LocalHostPort
-from log import SSEHandler
+from log import SSEHandler, formatter, logger
 from tools import indices
 
 # region 日志设置
 red = Redis('./redis.db')
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
 sse_handler = SSEHandler(red, "installation_progress")
 sse_handler.setFormatter(formatter)
 logger.addHandler(sse_handler)
-
-file_handler = logging.FileHandler("./.logs/setupui.log")
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
 
 
 # endregion 日志设置

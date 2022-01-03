@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from logging import StreamHandler
 
@@ -24,3 +25,15 @@ class SSEHandler(StreamHandler):
             "time": datetime.now().strftime('%H:%M:%S'),
             "color": get_level_color()
         }))
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
+file_handler = logging.FileHandler("./.logs/setupui.log")
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+console_handler = logging.StreamHandler()  # 输出到控制台的handler
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
