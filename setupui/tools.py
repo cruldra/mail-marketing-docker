@@ -1,7 +1,10 @@
 import socket
 
+import httpx
 import requests
 from pathlib import Path
+
+import rich
 
 
 def my_ip():
@@ -21,6 +24,22 @@ def write_content_to_file(path, text):
 
 def indices(arr, predicate=lambda x: bool(x)):
     return [i for i, x in enumerate(arr) if predicate(x)]
+
+
+def download_file(url, dist):
+    with open(dist, "w") as download_file:
+        with httpx.stream("GET", url) as response:
+            total = int(response.headers["Content-Length"])
+            with rich.progress.Progress(
+                    "[progress.percentage]{task.percentage:>3.0f}%",
+                    rich.progress.BarColumn(bar_width=None),
+                    rich.progress.DownloadColumn(),
+                    rich.progress.TransferSpeedColumn(),
+            ) as progress:
+                download_task = progress.add_task("Download", total=total)
+                for chunk in response.iter_bytes():
+                    download_file.write(chunk.decode('utf-8'))
+                    progress.update(download_task, completed=response.num_bytes_downloaded)
 
 
 def check_remote_port_opened(host, port) -> bool:

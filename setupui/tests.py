@@ -12,8 +12,9 @@ import html as html
 from urllib.request import urlretrieve
 
 import docker
+import httpx as httpx
 import pydnsbl
-import requests
+import rich
 import yaml
 from dns.rdatatype import RdataType
 from docker import APIClient
@@ -22,6 +23,7 @@ from redislite import Redis
 from termcolor import colored
 from bs4 import BeautifulSoup
 from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord
+from tools import download_file
 
 
 class CallShellCommandTests(unittest.TestCase):
@@ -29,13 +31,14 @@ class CallShellCommandTests(unittest.TestCase):
         # print(os.system("""
         # cat  /Users/liuye/fsdownload/mail.txt
         # """))
-        print( os.system("which ngrok"))
+        print(os.system("which ngrok"))
 
     def test_cat_mail_txt(self):
         pattern = re.compile(r'\"(.*)\"')
         res = pattern.findall(Path("/Users/liuye/fsdownload/mail.txt").read_text())
 
         print("".join(res))
+
 
 class EnvFileTests(unittest.TestCase):
     def test_load_env(self):
@@ -54,7 +57,24 @@ class FileDownloadTests(unittest.TestCase):
         os.chmod(man_script_path, st.st_mode | stat.S_IEXEC)
         os.symlink(man_script_path, "/usr/local/bin/msman")
 
+    def test_download_by_httpx(self):
+        with open("/Users/liuye/Downloads/test.sh", "w") as download_file:
+            url = "https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/setup.sh"
+            with httpx.stream("GET", url) as response:
+                total = int(response.headers["Content-Length"])
+                with rich.progress.Progress(
+                        "[progress.percentage]{task.percentage:>3.0f}%",
+                        rich.progress.BarColumn(bar_width=None),
+                        rich.progress.DownloadColumn(),
+                        rich.progress.TransferSpeedColumn(),
+                ) as progress:
+                    download_task = progress.add_task("Download", total=total)
+                    for chunk in response.iter_bytes():
+                        download_file.write(chunk.decode('utf-8'))
+                        progress.update(download_task, completed=response.num_bytes_downloaded)
 
+    def test_download2(self):
+        download_file("https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/setup.sh","/Users/liuye/Downloads/test.sh")
 class CertInstallTests(unittest.TestCase):
     def test_print_cmd(self):
         domain = "hasaiki.xyz"
