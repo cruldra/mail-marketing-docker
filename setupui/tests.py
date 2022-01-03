@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import stat
 import subprocess
 import tempfile
@@ -23,12 +24,25 @@ from bs4 import BeautifulSoup
 from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord
 
 
+class CallShellCommandTests(unittest.TestCase):
+    def test_by_os(self):
+        print(os.system("""
+        cat  /Users/liuye/fsdownload/mail.txt 
+        """))
+
+    def test_cat_mail_txt(self):
+        pattern = re.compile(r'\"(.*)\"')
+        res = pattern.findall(Path("/Users/liuye/fsdownload/mail.txt").read_text())
+
+        print("".join(res))
+
 class EnvFileTests(unittest.TestCase):
     def test_load_env(self):
         env_file_path = os.path.abspath(f"{__file__}/../../ms.env")
         load_dotenv(env_file_path)
-        set_key(env_file_path,"TZ","asdfadfa")
+        set_key(env_file_path, "TZ", "asdfadfa")
         print(os.getenv('TZ'))
+
 
 class FileDownloadTests(unittest.TestCase):
     def test_download_file(self):
@@ -174,8 +188,9 @@ class DomainTestCase(unittest.TestCase):
         self.assertEqual(DnsManager.NAMESILO.label, "Namesilo")
 
     def test_get_nameserver(self):
-        process = subprocess.Popen(["dig", "+short", "ns", "civetcat.net"], stdout=subprocess.PIPE)
-        output = process.communicate()[0].split('\n')
+        process = subprocess.Popen(["dig", "+short", "ns", "civetcat.net"], stdout=subprocess.PIPE,
+                                   universal_newlines=True)
+        output = process.communicate()
 
         ip_arr = []
         for data in output:

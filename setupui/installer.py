@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import stat
 from pathlib import Path
 
@@ -47,14 +48,33 @@ def install():
     fs = open('settings.json')
     settings = json.load(fs)
     fs.close()
-    docker_mail_server_component = \
-        [item for item in settings['components'] if item.get('name') == "Docker Mail Server"][0]
-    docker_mail_server_component_checked = docker_mail_server_component['checked']
-    if docker_mail_server_component_checked:
-        __install_mail_server__(settings, docker_compose_doc)
-    else:
-        docker_compose_doc['services'].pop('mailserver', None)
-    print(yaml.dump(docker_compose_doc))
+
+    def component_setup(name, installer, service_name):
+        """根据settings.json中的设定添加或删除组件
+
+        name:组件名称
+        installer:安装器
+        """
+        component = \
+            [item for item in settings['components'] if item.get('name') == name][0]
+        component_checked = component['checked']
+        if component_checked:
+            installer(settings, docker_compose_doc)
+        else:
+            docker_compose_doc['services'].pop(service_name, None)
+
+    component_setup("Docker Mail Server", __install_mail_server__, "mailserver")
+    component_setup("phpList", __install_phplist__, "phplist")
+    component_setup("Database", __install_db__, "db")
+    Path(os.path.abspath(__file__ + "/../../docker-compose.yml")).write_text(yaml.dump(docker_compose_doc))
+
+
+def __install_phplist__(settings, docker_compose_doc):
+    pass
+
+
+def __install_db__(settings, docker_compose_doc):
+    pass
 
 
 def __install_mail_server__(settings, docker_compose_doc):
@@ -135,8 +155,8 @@ def __install_mail_server__(settings, docker_compose_doc):
                 man_script_path)
     st = os.stat(man_script_path)
     os.chmod(man_script_path, st.st_mode | stat.S_IEXEC)
-    work_dir = os.path.abspath(f"{__file__}/../../")
-    logger.info(f"辅助脚本已下载,在{work_dir}目录下使用 ./msman.sh help 获取更多帮助信息.")
+    os.symlink(man_script_path, "/usr/local/bin/msman")
+    logger.info(f"辅助脚本已下载,使用 msman help 获取更多帮助信息.")
     # endregion
 
     # region 修改mailserver.env
@@ -152,8 +172,32 @@ def __install_mail_server__(settings, docker_compose_doc):
     logger.info("环境变量配置完成")
     # endregion
 
-    # region 配置dkim
+    # region 创建管理员账户
+    logger.info("创建管理员账户")
+    client = docker.from_env()
+    logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
+                                 tty=False,
+                                 stdin_open=False, volumes={
+            os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
+                                                                           'mode': 'rw'}},
+                                 command=f"""setup email add roo@{domain} 123456""")
+    logger.info(logs)
+    # endregion
 
+    # region 配置dkim
+    logger.info("配置dkim")
+    logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
+                                 tty=False,
+                                 stdin_open=False, volumes={
+            os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
+                                                                           'mode': 'rw'}},
+                                 command=f"""setup config dkim keysize 512""")
+    pattern = re.compile(r'\"(.*)\"')
+    key_file_path = Path(os.path.abspath(f"{__file__}/../../.mailserver-data/config/opendkim/keys/{domain}/mail.txt"))
+    res = pattern.findall(key_file_path.read_text())
+    dns_manager.addRecord(record=DnsRecord(host=domain, name='mail._domainkey', rdatatype=RdataType.TXT,
+                                           value=f'{"".join(res)}'), unique=True)
+    logger.info(logs)
     # endregion
 
     # 将docker mail server服务描述写入docker-compose.yml
