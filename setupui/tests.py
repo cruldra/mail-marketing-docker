@@ -26,9 +26,10 @@ from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord
 
 class CallShellCommandTests(unittest.TestCase):
     def test_by_os(self):
-        print(os.system("""
-        cat  /Users/liuye/fsdownload/mail.txt 
-        """))
+        # print(os.system("""
+        # cat  /Users/liuye/fsdownload/mail.txt
+        # """))
+        print( os.system("which ngrok"))
 
     def test_cat_mail_txt(self):
         pattern = re.compile(r'\"(.*)\"')

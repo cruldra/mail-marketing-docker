@@ -1,4 +1,5 @@
 import _thread
+import os
 from _socket import timeout, SHUT_RDWR
 from socket import socket, AF_INET, SOCK_STREAM
 from socketserver import BaseRequestHandler, TCPServer
@@ -60,7 +61,8 @@ class LocalHostPort:
         在执行完测试后,用于测试的socket服务将会被终止
         """
         # 创建到此端口的隧道
-        # conf.get_default().auth_token = "233TJDuRG2SBXuyMyiIXqBNvEwM_6LZrX2XhyWU4srFj5bGVs"
+        conf.get_default().auth_token = "233TJDuRG2SBXuyMyiIXqBNvEwM_6LZrX2XhyWU4srFj5bGVs"
+        conf.get_default().ngrok_path = "/usr/local/bin/ngrok"
         tunnel = ngrok.connect(self.__port__, "tcp")
         # 获取隧道链接
         print(tunnel.public_url)
