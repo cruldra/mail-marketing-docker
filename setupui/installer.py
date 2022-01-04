@@ -166,12 +166,12 @@ def __install_mail_server__(settings, docker_compose_doc):
     logger.info("配置环境变量")
     env_file_path = os.path.abspath(f"{__file__}/../../ms.env")
     load_dotenv(env_file_path)
-    set_key(env_file_path, "TZ", "Asia/Shanghai")
-    set_key(env_file_path, "POSTMASTER_ADDRESS", f"root@{domain}")
-    set_key(env_file_path, "PERMIT_DOCKER", "network")
-    set_key(env_file_path, "SSL_TYPE", "manual")
-    set_key(env_file_path, "SSL_CERT_PATH", "/tmp/ssl/fullchain1.pem")
-    set_key(env_file_path, "SSL_KEY_PATH", "/tmp/ssl/privkey1.pem")
+    set_key(env_file_path, "TZ", "Asia/Shanghai", 'never')
+    set_key(env_file_path, "POSTMASTER_ADDRESS", f"root@{domain}", 'never')
+    set_key(env_file_path, "PERMIT_DOCKER", "network", 'never')
+    set_key(env_file_path, "SSL_TYPE", "manual", 'never')
+    set_key(env_file_path, "SSL_CERT_PATH", "/tmp/ssl/fullchain1.pem", 'never')
+    set_key(env_file_path, "SSL_KEY_PATH", "/tmp/ssl/privkey1.pem", 'never')
     logger.info("环境变量配置完成")
     # endregion
 
@@ -184,7 +184,7 @@ def __install_mail_server__(settings, docker_compose_doc):
                                      stdin_open=False, volumes={
                 os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
                                                                                'mode': 'rw'}},
-                                     command=f"""setup email add roo@{domain} 123456""")
+                                     command=f"""setup email add root@{domain} 123456""")
         logger.info(logs.decode("utf-8"))
     except ContainerError as e:
         logger.error(f"创建管理员账户时出现异常 {str(e)}")
@@ -198,7 +198,7 @@ def __install_mail_server__(settings, docker_compose_doc):
                                      stdin_open=False, volumes={
                 os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
                                                                                'mode': 'rw'}},
-                                     command=f"""setup config dkim keysize 512""")
+                                     command=f"""setup config dkim keysize 1024""")
         pattern = re.compile(r'\"(.*)\"')
         key_file_path = Path(
             os.path.abspath(f"{__file__}/../../.mailserver-data/config/opendkim/keys/{domain}/mail.txt"))
@@ -218,7 +218,7 @@ def __install_mail_server__(settings, docker_compose_doc):
         "dns": docker_container_dns if docker_container_dns else "1.1.1.1",
         "hostname": "mail",
         "domainname": domain,
-        "env_file": "mailserver.env",
+        "env_file": "ms.env",
         "ports": ["25:25", "143:143", "465:465", "587:587", "993:993"],
         "volumes": [f"{docker_data_dir}/mail-data/:/var/mail/",
                     f"{docker_data_dir}/mail-state/:/var/mail-state/",

@@ -22,11 +22,13 @@
             <div class="grid-content bg-purple"></div>
         </el-col>
         <el-col :span="8">
-            <el-timeline>
-                <el-timeline-item v-for="log in   logs" :color="log.color" :timestamp="log.time" placement="top">
-                    ${log.msg}
-                </el-timeline-item>
-            </el-timeline>
+            <el-container style="height: 500px; border: 1px solid #eee">
+                <el-timeline>
+                    <el-timeline-item v-for="log in   logs" :color="log.color" :timestamp="log.time" placement="top">
+                        ${log.msg}
+                    </el-timeline-item>
+                </el-timeline>
+            </el-container>
         </el-col>
         <el-col :span="8">
             <div class="grid-content bg-purple"></div>

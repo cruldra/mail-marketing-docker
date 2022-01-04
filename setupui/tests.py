@@ -44,7 +44,7 @@ class EnvFileTests(unittest.TestCase):
     def test_load_env(self):
         env_file_path = os.path.abspath(f"{__file__}/../../ms.env")
         load_dotenv(env_file_path)
-        set_key(env_file_path, "TZ", "asdfadfa")
+        set_key(env_file_path, "TZ", "121212",'never')
         print(os.getenv('TZ'))
 
 
@@ -74,7 +74,10 @@ class FileDownloadTests(unittest.TestCase):
                         progress.update(download_task, completed=response.num_bytes_downloaded)
 
     def test_download2(self):
-        download_file("https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/setup.sh","/Users/liuye/Downloads/test.sh")
+        download_file("https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/setup.sh",
+                      "/Users/liuye/Downloads/test.sh")
+
+
 class CertInstallTests(unittest.TestCase):
     def test_print_cmd(self):
         domain = "hasaiki.xyz"
