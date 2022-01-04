@@ -33,7 +33,7 @@ logger.addHandler(sse_handler)
 def __init_docker_compose_file__():
     p = Path(os.path.abspath(__file__ + "/../../docker-compose.yml"))
     if not p.exists():
-        p.write_text(yaml.dump({"version": "3.7", "networks": {"network": None}}))
+        p.write_text(yaml.dump({"version": "3.7", "networks": {"network": None}, "services": {}}))
     return yaml.safe_load(p.read_text())
 
 
@@ -211,6 +211,7 @@ def __install_mail_server__(settings, docker_compose_doc):
     # endregion
 
     # 将docker mail server服务描述写入docker-compose.yml
+    logger.info("生成服务描述文件")
     docker_compose_doc['services']['mailserver'] = {
         "image": "docker.io/mailserver/docker-mailserver:latest",
         "container_name": docker_container_name if docker_container_name else "mailserver",

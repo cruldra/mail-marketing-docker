@@ -253,7 +253,7 @@ class ConsoleColorTestCase(unittest.TestCase):
 
 class YamlTestCase(unittest.TestCase):
     def test_load_yaml(self):
-        p = Path("/Users/liuye/DockerProjects/mail-marketing-docker/docker-compose.yml")
+        p = Path("/Users/liuye/DockerProjects/mail-marketing-docker/docker-compose-example.yml")
         doc = yaml.safe_load(p.read_text())
         print(yaml.dump(doc))
 
