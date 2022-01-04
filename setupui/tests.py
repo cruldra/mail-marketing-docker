@@ -44,7 +44,7 @@ class EnvFileTests(unittest.TestCase):
     def test_load_env(self):
         env_file_path = os.path.abspath(f"{__file__}/../../ms.env")
         load_dotenv(env_file_path)
-        set_key(env_file_path, "TZ", "121212",'never')
+        set_key(env_file_path, "TZ", "aaaa",'never')
         print(os.getenv('TZ'))
 
 

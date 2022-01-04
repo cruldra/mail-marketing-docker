@@ -5,6 +5,7 @@ import re
 import ssl
 import stat
 from pathlib import Path
+from shutil import copyfile
 
 import docker
 import pydnsbl
@@ -164,7 +165,9 @@ def __install_mail_server__(settings, docker_compose_doc):
 
     # region 修改mailserver.env
     logger.info("配置环境变量")
+    example_env_file_path = os.path.abspath(f"{__file__}/../../mailserver-example.env")
     env_file_path = os.path.abspath(f"{__file__}/../../ms.env")
+    copyfile(example_env_file_path, env_file_path)
     load_dotenv(env_file_path)
     set_key(env_file_path, "TZ", "Asia/Shanghai", 'never')
     set_key(env_file_path, "POSTMASTER_ADDRESS", f"root@{domain}", 'never')
