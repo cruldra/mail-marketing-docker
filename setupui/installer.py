@@ -145,10 +145,14 @@ def __install_mail_server__(settings, docker_compose_doc):
     # region 下载辅助脚本及添加执行权限
     logger.info("下载辅助脚本")
     man_script_path = os.path.abspath(__file__ + "/../../msman.sh")
-    download_file("https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/setup.sh",man_script_path)
+    download_file("https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/setup.sh",
+                  man_script_path)
     st = os.stat(man_script_path)
     os.chmod(man_script_path, st.st_mode | stat.S_IEXEC)
-    os.symlink(man_script_path, "/usr/local/bin/msman")
+    try:
+        os.symlink(man_script_path, "/usr/local/bin/msman")
+    except FileExistsError as e:
+        pass
     logger.info(f"辅助脚本已下载,使用 msman help 获取更多帮助信息.")
     # endregion
 
