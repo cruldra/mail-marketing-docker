@@ -119,40 +119,46 @@ def __install_mail_server__(settings, docker_compose_doc):
 
     # region 申请证书
     logger.info("正在申请证书")
-    try:
-        cloudflare_ini = Path(os.path.abspath(__file__ + "/../../config/cloudflare.ini"))
-        cloudflare_ini.write_text(f"dns_cloudflare_api_token = {domain_and_ip_form['sk']}")
-        client = docker.from_env()
-        logs = client.containers.run(image='certbot/dns-cloudflare', detach=False, auto_remove=True, tty=True,
-                                     stdin_open=True,
-                                     name="certbot", volumes={
-                os.path.abspath(__file__ + "/../../config/certs"): {'bind': f'/etc/letsencrypt/archive',
-                                                                    'mode': 'rw'},
-                cloudflare_ini: {'bind': '/cloudflare.ini', 'mode': 'ro'}},
-                                     command=f"""certonly  --noninteractive \
+
+    def check_cert_exist():
+        """检查对应域名的证书是否存在,不存在才会使用cert申请"""
+        return Path(os.path.abspath(f"{__file__}/../../config/certs/{domain}/fullchain1.pem")).exists() and Path(
+            os.path.abspath(f"{__file__}/../../config/certs/{domain}/privkey1.pem")).exists()
+
+    if not check_cert_exist():
+        try:
+            cloudflare_ini = Path(os.path.abspath(__file__ + "/../../config/cloudflare.ini"))
+            cloudflare_ini.write_text(f"dns_cloudflare_api_token = {domain_and_ip_form['sk']}")
+            client = docker.from_env()
+            logs = client.containers.run(image='certbot/dns-cloudflare', detach=False, auto_remove=True, tty=True,
+                                         stdin_open=True,
+                                         name="certbot", volumes={
+                    os.path.abspath(__file__ + "/../../config/certs"): {'bind': f'/etc/letsencrypt/archive',
+                                                                        'mode': 'rw'},
+                    cloudflare_ini: {'bind': '/cloudflare.ini', 'mode': 'ro'}},
+                                         command=f"""certonly  --noninteractive \
                                                           --agree-tos -m root@{domain} --preferred-challenges dns --expand  --dns-cloudflare  --dns-cloudflare-credentials /cloudflare.ini  \
                                                           -d *.{domain}  --server https://acme-v02.api.letsencrypt.org/directory""")
-        logger.info(logs)
-    except ContainerError as e:
-        pass
-    finally:
-        if Path(os.path.abspath(f"{__file__}/../../config/certs/{domain}/privkey1.pem")).exists():
-            logger.info("证书申请成功")
-        else:
-            logger.error("证书申请失败")
+            logger.info(logs)
+        except ContainerError as e:
+            logger.error(f"申请证书时出现异常:{str(e)}")
+    else:
+        logger.info("证书申请成功")
     # endregion
 
     # region 下载辅助脚本及添加执行权限
     logger.info("下载辅助脚本")
     man_script_path = os.path.abspath(__file__ + "/../../msman.sh")
-    download_file("https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/setup.sh",
-                  man_script_path)
-    st = os.stat(man_script_path)
-    os.chmod(man_script_path, st.st_mode | stat.S_IEXEC)
-    try:
-        os.symlink(man_script_path, "/usr/local/bin/msman")
-    except FileExistsError as e:
-        pass
+    # 如果不存在就从远程下载
+    if not Path(man_script_path).exists():
+        download_file("https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/setup.sh",
+                      man_script_path)
+        st = os.stat(man_script_path)
+        os.chmod(man_script_path, st.st_mode | stat.S_IEXEC)
+
+    symbol_link = "/usr/local/bin/msman"
+    if not Path(symbol_link).exists():
+        os.symlink(man_script_path, symbol_link)
     logger.info(f"辅助脚本已下载,使用 msman help 获取更多帮助信息.")
     # endregion
 
@@ -172,29 +178,36 @@ def __install_mail_server__(settings, docker_compose_doc):
     # region 创建管理员账户
     logger.info("创建管理员账户")
     client = docker.from_env()
-    logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                                 tty=False,
-                                 stdin_open=False, volumes={
-            os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
-                                                                           'mode': 'rw'}},
-                                 command=f"""setup email add roo@{domain} 123456""")
-    logger.info(logs.decode("utf-8"))
+    try:
+        logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
+                                     tty=False,
+                                     stdin_open=False, volumes={
+                os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
+                                                                               'mode': 'rw'}},
+                                     command=f"""setup email add roo@{domain} 123456""")
+        logger.info(logs.decode("utf-8"))
+    except ContainerError as e:
+        logger.error(f"创建管理员账户时出现异常 {str(e)}")
     # endregion
 
     # region 配置dkim
     logger.info("配置dkim")
-    logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                                 tty=False,
-                                 stdin_open=False, volumes={
-            os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
-                                                                           'mode': 'rw'}},
-                                 command=f"""setup config dkim keysize 512""")
-    pattern = re.compile(r'\"(.*)\"')
-    key_file_path = Path(os.path.abspath(f"{__file__}/../../.mailserver-data/config/opendkim/keys/{domain}/mail.txt"))
-    res = pattern.findall(key_file_path.read_text())
-    dns_manager.addRecord(record=DnsRecord(host=domain, name='mail._domainkey', rdatatype=RdataType.TXT,
-                                           value=f'{"".join(res)}'), unique=True)
-    logger.info(logs.decode("utf-8"))
+    try:
+        logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
+                                     tty=False,
+                                     stdin_open=False, volumes={
+                os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
+                                                                               'mode': 'rw'}},
+                                     command=f"""setup config dkim keysize 512""")
+        pattern = re.compile(r'\"(.*)\"')
+        key_file_path = Path(
+            os.path.abspath(f"{__file__}/../../.mailserver-data/config/opendkim/keys/{domain}/mail.txt"))
+        res = pattern.findall(key_file_path.read_text())
+        dns_manager.addRecord(record=DnsRecord(host=domain, name='mail._domainkey', rdatatype=RdataType.TXT,
+                                               value=f'{"".join(res)}'), unique=True)
+        logger.info(logs.decode("utf-8"))
+    except ContainerError as e:
+        logger.error(f"配置dkim时出现异常 {str(e)}")
     # endregion
 
     # 将docker mail server服务描述写入docker-compose.yml
