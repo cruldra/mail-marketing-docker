@@ -174,7 +174,7 @@ def __install_mail_server__(settings, docker_compose_doc):
             os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
                                                                            'mode': 'rw'}},
                                  command=f"""setup email add roo@{domain} 123456""")
-    logger.info(logs)
+    logger.info(logs.decode("utf-8"))
     # endregion
 
     # region 配置dkim
@@ -190,7 +190,7 @@ def __install_mail_server__(settings, docker_compose_doc):
     res = pattern.findall(key_file_path.read_text())
     dns_manager.addRecord(record=DnsRecord(host=domain, name='mail._domainkey', rdatatype=RdataType.TXT,
                                            value=f'{"".join(res)}'), unique=True)
-    logger.info(logs)
+    logger.info(logs.decode("utf-8"))
     # endregion
 
     # 将docker mail server服务描述写入docker-compose.yml
