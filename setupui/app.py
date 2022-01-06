@@ -138,7 +138,7 @@ def manage_mail_accounts():
     mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
     mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
     return render_template('mail_accounts.html',
-                           accounts=list(map(lambda s: {"username": s}, mail_account_manager.list())))
+                           accounts=htmlsafe_dumps(list(map(lambda s: {"username": s}, mail_account_manager.list()))))
 
 
 @app.route("/mail-server/accounts/pwd/update", methods=['POST'])
