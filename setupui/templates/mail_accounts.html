@@ -24,8 +24,8 @@
                         label="操作"
                         width="100">
                     <template slot-scope="scope">
-                        <el-button @click="handleClick(scope.row)" type="text" size="small">修改密码</el-button>
-                        <el-button @click="handleClick(scope.row)" type="text" size="small">删除</el-button>
+                        <el-button @click="open_update_pwd_form(scope.row)" type="text" size="small">修改密码</el-button>
+                        <el-button @click="delete_mail_account(scope.row)" type="text" size="small">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -35,16 +35,16 @@
         </el-col>
     </el-row>
 
-    <el-dialog title="修改密码" :visible.sync="updateAccountPwd.dialogVisible">
-        <el-form :model="updateAccountPwd.form">
+    <el-dialog title="修改密码" :visible.sync="update_pwd.dialog_visible">
+        <el-form :model="update_pwd.form">
             <el-form-item label="新密码" label-width="150px">
-                <el-input v-model="updateAccountPwd.form.newPwd" autocomplete="off"></el-input>
+                <el-input v-model="update_pwd.form.new_pwd" autocomplete="off"></el-input>
             </el-form-item>
 
         </el-form>
         <div slot="footer" class="dialog-footer">
-            <el-button @click="updateAccountPwd.dialogVisible = false">取 消</el-button>
-            <el-button type="primary" @click="dialogFormVisible = false">确 定</el-button>
+            <el-button @click="update_pwd.dialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="update_pwd">确 定</el-button>
         </div>
     </el-dialog>
 </div>
@@ -63,17 +63,67 @@
         data: function () {
             return {
                 accounts,
-                updateAccountPwd: {
-                    dialogVisible: false, form: {
-                        newPwd: ''
+                selected_account: undefined,
+                update_pwd: {
+                    dialog_visible: false,
+                    form: {
+                        new_pwd: ''
                     }
                 }
             }
         },
-        methods:{
-            openNewPwdForm(account){
-                this.updateAccountPwd.dialogVisible = true
+        methods: {
+            open_update_pwd_form(account) {
+                this.update_pwd.dialog_visible = true
+                this.selected_account = account
+            },
+            update_pwd() {
 
+                $.ajax({
+                    type: "post",
+                    url: '{{url_for("update_mail_account_pwd")}}',
+                    data: {
+                        'username': this.selected_account.username,
+                        'new_pwd': this.update_pwd.from.new_pwd
+                    },
+                    dataType: "json",
+                    success: (resp) => {
+                        if (resp.code === 0) {
+                            this.$notify.info({
+                                title: '修改邮箱密码',
+                                message: resp.msg
+                            });
+                        } else {
+                            this.$notify.error({
+                                title: '修改邮箱密码',
+                                message: resp.msg
+                            });
+                        }
+                    }
+                });
+            },
+            delete_mail_account(account) {
+                $.ajax({
+                    type: "post",
+                    url: '{{url_for("del_mail_account")}}',
+                    data: {
+                        'username': account.username
+                    },
+                    dataType: "json",
+                    success: (resp) => {
+                        if (resp.code === 0) {
+                            this.$notify.info({
+                                title: '删除邮箱账户',
+                                message: resp.msg
+                            });
+                        } else {
+                            this.$notify.error({
+                                title: '删除邮箱账户',
+                                message: resp.msg
+                            });
+                        }
+                    }
+                });
             }
         }
     })

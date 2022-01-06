@@ -65,7 +65,7 @@ class MailAccountManager:
                                                                            'mode': 'rw'}},
                               command=f"""setup email update {name} {npwd}""")
 
-    def rem(self, name):
+    def delete(self, name):
         """删除邮箱账户
 
         :param name:账户名

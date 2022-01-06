@@ -137,7 +137,8 @@ def manage_mail_accounts():
     set_mail_server_form = settings_manager.get_form('setMailServer')
     mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
     mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
-    return htmlsafe_dumps(mail_account_manager.list())
+    return render_template('mail_accounts.html',
+                           accounts=list(map(lambda s: {"username": s}, mail_account_manager.list())))
 
 
 @app.route("/mail-server/accounts/pwd/update", methods=['POST'])
@@ -148,9 +149,30 @@ def update_mail_account_pwd():
         set_mail_server_form = settings_manager.get_form('setMailServer')
         mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
         mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
-        mail_account_manager.update(request.args['name'], request.args['npwd'])
+        mail_account_manager.update(request.args['username'], request.args['new_pwd'])
         return {
-            "code": 0
+            "code": 0,
+            "msg": '密码已修改'
+        }
+    except Exception as e:
+        return {
+            "code": 1,
+            "msg": str(e)
+        }
+
+
+@app.route("/mail-server/accounts/del", methods=['POST'])
+def del_mail_account():
+    """删除邮箱账户"""
+    try:
+        settings_manager.reload()
+        set_mail_server_form = settings_manager.get_form('setMailServer')
+        mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
+        mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
+        mail_account_manager.delete(request.args['username'])
+        return {
+            "code": 0,
+            "msg": '已删除'
         }
     except Exception as e:
         return {
