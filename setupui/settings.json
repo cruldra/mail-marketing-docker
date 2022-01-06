@@ -110,7 +110,7 @@
         "setMailServer": {}
     },
     "steps": {
-        "active": "setMailServer",
+        "active": "selectComponents",
         "value": [
             {
                 "description": "",

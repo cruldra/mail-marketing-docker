@@ -1,11 +1,13 @@
 import json
 import logging
 import os
+import random
 import re
 import ssl
 import stat
 from pathlib import Path
 from shutil import copyfile
+from uuid import uuid1
 
 import docker
 import pydnsbl
@@ -38,11 +40,24 @@ def __init_docker_compose_file__():
     return yaml.safe_load(p.read_text())
 
 
+def __add_todo_to_component__(component_name: str, todo):
+    with open('settings.json') as fs:
+        settings = json.load(fs)
+    component = next(x for x in settings['components'] if x['name'] == component_name)
+    if "todo_list" not in component:
+        component['todo_list'] = {}
+
+    # 名字重复且参数是一个列表的情况下
+    if todo['name'] in component['todo_list'] and isinstance(todo['parameters'], list):
+        component['todo_list'][todo['name']]['parameters'] += todo['parameters']
+    else:
+        component['todo_list'][todo['name']] = todo
+
+
 def install():
     docker_compose_doc = __init_docker_compose_file__()
-    fs = open('settings.json')
-    settings = json.load(fs)
-    fs.close()
+    with open('settings.json') as fs:
+        settings = json.load(fs)
 
     def component_setup(name, installer, service_name):
         """根据settings.json中的设定添加或删除组件
@@ -62,6 +77,7 @@ def install():
     component_setup("phpList", __install_phplist__, "phplist")
     component_setup("Database", __install_db__, "db")
     Path(os.path.abspath(__file__ + "/../../docker-compose.yml")).write_text(yaml.dump(docker_compose_doc))
+    logger.info("all_done")
 
 
 def __install_phplist__(settings, docker_compose_doc):
@@ -107,15 +123,33 @@ def __install_mail_server__(settings, docker_compose_doc):
 
     # region 添加dns记录
     logger.info("添加dns记录")
-    dns_manager.addRecord(record=DnsRecord(host=domain, name='mail', rdatatype=RdataType.A,
-                                           value=ip), unique=True)
-    dns_manager.addRecord(record=DnsRecord(host=domain, name='_dmarc', rdatatype=RdataType.TXT,
-                                           value=f"v=DMARC1; p=quarantine; rua=mailto:dmarc.report@{domain}; ruf=mailto:dmarc.report@{domain}; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; sp=quarantine"),
-                          unique=True)
-    dns_manager.addRecord(record=DnsRecord(host=domain, name='@', rdatatype=RdataType.TXT,
-                                           value="v=spf1 mx ~all"), unique=True)
-    dns_manager.addRecord(record=DnsRecord(host=domain, name='@', rdatatype=RdataType.MX,
-                                           value=f"mail.{domain}"), unique=True)
+    r1 = DnsRecord(host=domain, name='mail', rdatatype=RdataType.A,
+                   value=ip)
+    dns_manager.addRecord(r1, True)
+    r2 = DnsRecord(host=domain, name='_dmarc', rdatatype=RdataType.TXT,
+                   value=f"v=DMARC1; p=quarantine; rua=mailto:dmarc.report@{domain}; ruf=mailto:dmarc.report@{domain}; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; sp=quarantine")
+    dns_manager.addRecord(r2, True)
+    r3 = DnsRecord(host=domain, name='@', rdatatype=RdataType.TXT,
+                   value="v=spf1 mx ~all")
+    dns_manager.addRecord(r3, True)
+    r4 = DnsRecord(host=domain, name='@', rdatatype=RdataType.MX,
+                   value=f"mail.{domain}")
+    dns_manager.addRecord(r4, unique=True)
+
+    # 添加dns检查任务到to_do_list
+    __add_todo_to_component__('Docker Mail Server', {
+        "name": "check_dns_records",
+        "color": random.choice(["primary", "success", "info", "warning", "danger"]),
+        "label": "检查dns解析",
+        "persistence": "once",
+        "endpoint": 'dns_check',
+        "redirect": False,
+        "parameters": [
+            {"name": domain_and_ip_form['dnsManager'], "ak": domain_and_ip_form['ak'], "sk": domain_and_ip_form['sk']},
+            r1.to_json(), r2.to_json(), r3.to_json(),
+            r4.to_json()]
+    })
+    # settings['components']['']
     # endregion
 
     # region 申请证书
@@ -181,16 +215,27 @@ def __install_mail_server__(settings, docker_compose_doc):
     # region 创建管理员账户
     logger.info("创建管理员账户")
     client = docker.from_env()
+    mail_server_config_dir = os.path.abspath(f"{__file__}/../../{docker_data_dir}/config")
     try:
         logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
                                      tty=False,
-                                     stdin_open=False, volumes={
-                os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
-                                                                               'mode': 'rw'}},
+                                     stdin_open=False,
+                                     volumes={mail_server_config_dir: {'bind': f'/tmp/docker-mailserver',
+                                                                       'mode': 'rw'}},
                                      command=f"""setup email add root@{domain} 123456""")
         logger.info(logs.decode("utf-8"))
     except ContainerError as e:
         logger.error(f"创建管理员账户时出现异常 {str(e)}")
+    # 添加管理邮箱账户到to_do_list
+    __add_todo_to_component__('Docker Mail Server', {
+        "name": "manage_mail_accounts",
+        "color": random.choice(["primary", "success", "info", "warning", "danger"]),
+        "label": "管理邮箱账户",
+        "persistence": "every",
+        "endpoint": 'manage_mail_accounts',
+        "redirect": True,
+        "parameters": {}
+    })
     # endregion
 
     # region 配置dkim
@@ -198,17 +243,25 @@ def __install_mail_server__(settings, docker_compose_doc):
     try:
         logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
                                      tty=False,
-                                     stdin_open=False, volumes={
-                os.path.abspath(__file__ + "/../../.mailserver-data/config"): {'bind': f'/tmp/docker-mailserver',
-                                                                               'mode': 'rw'}},
+                                     stdin_open=False,
+                                     volumes={mail_server_config_dir: {'bind': f'/tmp/docker-mailserver',
+                                                                       'mode': 'rw'}},
                                      command=f"""setup config dkim keysize 1024""")
         pattern = re.compile(r'\"(.*)\"')
         key_file_path = Path(
-            os.path.abspath(f"{__file__}/../../.mailserver-data/config/opendkim/keys/{domain}/mail.txt"))
+            os.path.abspath(f"{mail_server_config_dir}/opendkim/keys/{domain}/mail.txt"))
         res = pattern.findall(key_file_path.read_text())
-        dns_manager.addRecord(record=DnsRecord(host=domain, name='mail._domainkey', rdatatype=RdataType.TXT,
-                                               value=f'{"".join(res)}'), unique=True)
+        r5 = DnsRecord(host=domain, name='mail._domainkey', rdatatype=RdataType.TXT,
+                       value=f'{"".join(res)}')
+        dns_manager.addRecord(r5, True)
         logger.info(logs.decode("utf-8"))
+        __add_todo_to_component__('Docker Mail Server', {
+            "name": "check_dns_records",
+            "label": "检查dns解析",
+            "persistence": "once",
+            "endpoint": 'dns_check',
+            "parameters": [r5.to_json()]
+        })
     except ContainerError as e:
         logger.error(f"配置dkim时出现异常 {str(e)}")
     # endregion

@@ -37,28 +37,53 @@
             <div class="grid-content bg-purple"></div>
         </el-col>
     </el-row>
+    <el-row :gutter="20">
+        <el-col :span="7">
+            <div class="grid-content bg-purple"></div>
+        </el-col>
+        <el-col :span="10">
+            <el-button :disabled="!all_done" @click="services" type="primary">转到服务控制台</el-button>
+        </el-col>
+        <el-col :span="7">
+            <div class="grid-content bg-purple"></div>
+        </el-col>
+    </el-row>
+    <div style="display: none">
+        <form id="form"></form>
+    </div>
 </div>
 </body>
 <script src="https://unpkg.com/vue/dist/vue.js"></script>
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+{% block scripts %}
 <script>
     const logs = []
+    const all_done = false
     new Vue({
         el: '#app',
         delimiters: ['${', '}'],
         data: function () {
             return {
-                logs
+                logs,
+                all_done
             }
         },
         mounted() {
             const source = new EventSource('/install_progress');
             source.addEventListener("installation_progress", (event) => {
-                console.log(event.data)
-                if (event.data !== "1") this.logs.push(JSON.parse(event.data))
-
+                const msg = JSON.parse(event.data)
+                if (event.data !== "1")
+                    if (msg.msg === "all_done") this.all_done = true
+                    else this.logs.push(msg)
             })
+        },
+        methods: {
+            services() {
+                window.location.href = '{{url_for("services")}}'
+            }
         }
     })
 </script>
+{% endblock %}
 </html>

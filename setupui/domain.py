@@ -55,6 +55,14 @@ class DnsRecord:
     def ttl(self):
         return self.__ttl__
 
+    def to_json(self):
+        return {
+            "host": self.host,
+            "name": self.name,
+            "value": self.value,
+            "type": self.rdatatype
+        }
+
     def __init__(self, host, name, value, rdatatype: RdataType = RdataType.A, ttl: int = 0, id=""):
         self.__id__ = id
         self.__host__ = host
@@ -62,6 +70,12 @@ class DnsRecord:
         self.__value__ = value
         self.__rdatatype__ = rdatatype
         self.__ttl__ = ttl
+
+    def __str__(self) -> str:
+        return f"{self.name}.{self.host}"
+
+    def __repr__(self) -> str:
+        return f"{self.name}.{self.host}"
 
 
 class IDnsManager:
@@ -82,14 +96,29 @@ class IDnsManager:
 
     def addRecord(self, record: DnsRecord, unique: bool = False):
         """添加记录
-        record:dns记录
-        unique:确保这条记录是唯一的
+
+        :param  record: dns记录
+        :param unique: 确保这条记录是唯一的
+        """
+        pass
+
+    def list(self, host, **kwargs):
+        """获取dns记录列表
+
+        :param host: 域名
         """
         pass
 
     def deleteRecord(self, record_id: str):
         """删除记录
         record_id:记录id
+        """
+        pass
+
+    def check_record(self, record: DnsRecord):
+        """检查dns记录是否存在
+
+        :param record: 要检查的dns记录
         """
         pass
 
@@ -103,28 +132,55 @@ class DnsManager(IDnsManager, Enum):
     _label_: str
     _nameserver_pattern_: str
 
-    def addRecord(self, record: DnsRecord, unique: bool = False):
-        if self.code == DnsManager.CLOUDFLARE.code:
+    def __get_cf_zone_id__(self, host):
+        cf = CloudFlare.CloudFlare(email=self.ak, token=self.sk)
+        zones = cf.zones.get(params={'name': host, 'per_page': 1})
+        if len(zones) == 0:
+            raise DnsException(f"请确认域名{host}成功交由{self.label}托管.")
+        return zones[0]['id']
+
+    def list(self, host, **kwargs):
+        def cloudflare():
             cf = CloudFlare.CloudFlare(email=self.ak, token=self.sk)
-            zones = cf.zones.get(params={'name': record.host, 'per_page': 1})
-            if len(zones) == 0:
-                raise DnsException(f"请确认域名{record.host}成功交由{self.label}托管.")
-            zone_id = zones[0]['id']
-            dns_records = cf.zones.dns_records.get(zone_id)
+            return cf.zones.dns_records.get(self.__get_cf_zone_id__(host))
 
-            def predicate(dns_record):
-                return record == dns_record
+        handlers = {"cloudflare": cloudflare}
+        if self.code not in handlers:
+            raise DnsException(f"dns管理器{self.code}暂未提供支持")
+        else:
+            return handlers[self.code]()
 
-            if not any(predicate(elem) for elem in dns_records):
-                res = cf.zones.dns_records.post(zone_id, data={
+    def addRecord(self, record: DnsRecord, unique: bool = False):
+        def cloudflare():
+            cf_zone_id = self.__get_cf_zone_id__(record.host)
+            cf = CloudFlare.CloudFlare(email=self.ak, token=self.sk)
+            if unique and self.check_record(record):
+                return
+            else:
+                cf.zones.dns_records.post(cf_zone_id, data={
                     "name": record.name,
                     "type": record.rdatatype.name,
                     "content": record.value,
                     "ttl": 1,
                     'priority': 10
                 })
-            # for rs in list(filter(predicate, dns_records)):
-            #     self.deleteRecord(rs['id'])
+
+        handlers = {"cloudflare": cloudflare}
+        if self.code not in handlers:
+            raise DnsException(f"dns管理器{self.code}暂未提供支持")
+        else:
+            return handlers[self.code]()
+
+    def check_record(self, record: DnsRecord):
+        def cloudflare():
+            dns_records = self.list(record.host)
+            return any(lambda it: it == record for _ in dns_records)
+
+        handlers = {"cloudflare": cloudflare}
+        if self.code not in handlers:
+            raise DnsException(f"dns管理器{self.code}暂未提供支持")
+        else:
+            return handlers[self.code]()
 
     @classmethod
     def code_of(cls, code) -> DnsManager:

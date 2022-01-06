@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+from inspect import getmembers, isfunction
 from pathlib import Path
 
 import html as html
@@ -19,11 +20,80 @@ import yaml
 from dns.rdatatype import RdataType
 from docker import APIClient
 from dotenv import load_dotenv, set_key
+from flask import url_for
 from redislite import Redis
+from stringcase import snakecase, alphanumcase
 from termcolor import colored
 from bs4 import BeautifulSoup
-from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord
+
+import app
+import tools
+from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord, DnsException
 from tools import download_file
+
+
+class ExceptionTests(unittest.TestCase):
+    def test_raise_exception(self):
+        raise DnsException("111")
+
+
+class ReflectionTests(unittest.TestCase):
+    def test_dir(self):
+        for fun in dir(tools):
+            print(fun)
+        print(tools)
+
+    def test_get_endpoint_urls(self):
+        # for fun in getmembers(app, isfunction):
+        #     print(fun[0])
+        print(url_for("index"))
+
+    def test_getmembers(self):
+        func = next(fun for fun in getmembers(tools, isfunction) if fun[0] == "my_ip")[1]
+        print(func())
+
+
+class JsonTests(unittest.TestCase):
+    def test_serialize_tunple(self):
+        print(json.dumps((True, "asdfa")))
+
+    def test_serialize(self):
+        print(json.dumps(DnsRecord(host="domain", name='mail', rdatatype=RdataType.A,
+                                   value="ip"), default=lambda obj: {
+            "host": obj.host,
+            "name": obj.name,
+            "value": obj.value,
+            "type": obj.rdatatype.name
+        }))
+
+    def test_dump(self):
+        with open("/Users/liuye/Downloads/test.json") as f:
+            settings = json.load(f)
+        component = next(x for x in settings['components'] if x['name'] == 'Docker Mail Server')
+        component['todo_list'] = [{
+            "title": 'dns检查'
+        }]
+        Path("/Users/liuye/Downloads/test.json").write_text(json.dumps(settings))
+
+
+class RegexTests(unittest.TestCase):
+    def test_extract_emails(self):
+        for e in re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', """
+        * root1@9l2z.xyz ( 1.0K / ~ ) [0%]
+        * root2@9l2z.xyz ( 1.0K / ~ ) [0%]
+        * root3@9l2z.xyz ( 1.0K / ~ ) [0%]
+        """):
+            print(e)
+        print(type(re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', """
+        * root1@9l2z.xyz ( 1.0K / ~ ) [0%]
+        * root2@9l2z.xyz ( 1.0K / ~ ) [0%]
+        * root3@9l2z.xyz ( 1.0K / ~ ) [0%]
+        """)))
+
+
+class StringCaseTests(unittest.TestCase):
+    def test_to_snake_case(self):
+        self.assertEqual(snakecase(alphanumcase("Docker Mail Server")), "docker_mail_server")
 
 
 class CallShellCommandTests(unittest.TestCase):
@@ -44,7 +114,7 @@ class EnvFileTests(unittest.TestCase):
     def test_load_env(self):
         env_file_path = os.path.abspath(f"{__file__}/../../ms.env")
         load_dotenv(env_file_path)
-        set_key(env_file_path, "TZ", "aaaa",'never')
+        set_key(env_file_path, "TZ", "aaaa", 'never')
         print(os.getenv('TZ'))
 
 
