@@ -112,6 +112,7 @@ def todo():
             }
         else:
             func = next(fun for fun in getmembers(tools, isfunction) if fun[0] == task['endpoint'])[1]
+            print("要调用的函数:" + str(func))
             res = {
                 "code": 0,
                 "data": func(task['parameters'])
@@ -124,7 +125,7 @@ def todo():
 
     except Exception as e:
         return {
-            "code": 0,
+            "code": 1,
             "msg": str(e)
         }
 
