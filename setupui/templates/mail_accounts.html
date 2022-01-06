@@ -59,15 +59,15 @@
         </el-col>
     </el-row>
 
-    <el-dialog title="修改密码" :visible.sync="update_pwd.dialog_visible">
-        <el-form :model="update_pwd.form">
+    <el-dialog title="修改密码" :visible.sync="update_pwd_dialog.visible">
+        <el-form :model="update_pwd_dialog.form">
             <el-form-item label="新密码" label-width="150px">
-                <el-input v-model="update_pwd.form.new_pwd" autocomplete="off"></el-input>
+                <el-input v-model="update_pwd_dialog.form.new_pwd" autocomplete="off"></el-input>
             </el-form-item>
 
         </el-form>
         <div slot="footer" class="dialog-footer">
-            <el-button @click="update_pwd.dialogVisible = false">取 消</el-button>
+            <el-button @click="update_pwd_dialog.visible = false">取 消</el-button>
             <el-button type="primary" @click="update_pwd">确 定</el-button>
         </div>
     </el-dialog>
@@ -88,8 +88,8 @@
             return {
                 accounts,
                 selected_account: undefined,
-                update_pwd: {
-                    dialog_visible: false,
+                update_pwd_dialog: {
+                    visible: false,
                     form: {
                         new_pwd: ''
                     }
@@ -98,7 +98,7 @@
         },
         methods: {
             open_update_pwd_form(account) {
-                this.update_pwd.dialog_visible = true
+                this.update_pwd_dialog.visible = true
                 this.selected_account = account
             },
             update_pwd() {
@@ -108,7 +108,7 @@
                     url: '{{url_for("update_mail_account_pwd")}}',
                     data: {
                         'username': this.selected_account.username,
-                        'new_pwd': this.update_pwd.from.new_pwd
+                        'new_pwd': this.update_pwd_dialog.from.new_pwd
                     },
                     dataType: "json",
                     success: (resp) => {
