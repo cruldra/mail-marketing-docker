@@ -149,7 +149,7 @@ def update_mail_account_pwd():
         set_mail_server_form = settings_manager.get_form('setMailServer')
         mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
         mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
-        mail_account_manager.update(request.args['username'], request.args['new_pwd'])
+        mail_account_manager.update(request.form['username'], request.form['new_pwd'])
         return {
             "code": 0,
             "msg": '密码已修改'
@@ -169,7 +169,7 @@ def del_mail_account():
         set_mail_server_form = settings_manager.get_form('setMailServer')
         mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
         mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
-        mail_account_manager.delete(request.args['username'])
+        mail_account_manager.delete(request.form['username'])
         return {
             "code": 0,
             "msg": '已删除'
