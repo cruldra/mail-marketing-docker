@@ -227,7 +227,7 @@ def dns_check(params):
     dns_manager.init(params[0]['ak'], params[0]['sk'])
     msg = ""
     # dns_manager.check_record()
-    for record in params[1, len(params)]:
+    for record in params[1: len(params)]:
         if not dns_manager.check_record(record):
             msg += f"记录[{str(record)}{os.linesep}]不存在或不正确"
     return "所有记录已正确配置" if not msg else msg
