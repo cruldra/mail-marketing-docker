@@ -93,6 +93,17 @@ class SettingsManager:
         with open(self.file) as fs:
             self.json = json.load(fs)
 
+    def component_task_completed(self, component_name, task):
+        """指示组件的某个任务已完成
+
+        如果任务是一次性的,则从组件任务中移除
+
+        :param component_name: 组件名称
+        :param task: 任务
+        """
+        if task['persistence'] == "once":
+            self.get_component(component_name)['todo_list'].pop(task.name, None)
+
     def get_active_step_index(self):
         """获取当前激活的步骤的索引"""
 

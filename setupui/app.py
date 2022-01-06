@@ -117,13 +117,9 @@ def todo():
                 "data": func(task['parameters'])
             }
 
-        # 如果是一次性任务,执行完成后从组件的todo_list中移除
-        with open('settings.json') as fs:
-            settings = json.load(fs)
-        component = next(x for x in settings['components'] if x['name'] == component_name)
-        if task['persistence'] == "once":
-            component['todo_list'].pop([task.name], None)
-        write_content_to_file('settings.json', json.dumps(settings, indent=4, sort_keys=True))
+        settings_manager.reload()
+        settings_manager.component_task_completed(component_name, task)
+        settings_manager.save()
         return res
 
     except Exception as e:
