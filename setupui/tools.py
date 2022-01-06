@@ -9,6 +9,8 @@ import requests
 from pathlib import Path
 
 import rich
+from docker.errors import NotFound
+from stringcase import snakecase, alphanumcase
 
 from domain import DnsManager
 
@@ -81,9 +83,25 @@ class MailAccountManager:
 
 class SettingsManager:
 
-    def __init__(self):
-        with open('settings.json') as fs:
+    def __init__(self, file='settings.json'):
+        self.json = None
+        self.file = file
+        self.reload()
+
+    def reload(self):
+        """重新加载设置文档"""
+        with open(self.file) as fs:
             self.json = json.load(fs)
+
+    def get_active_step_index(self):
+        """获取当前激活的步骤的索引"""
+
+        return indices(self.json['steps']['value'],
+                       lambda e: e['key'] == self.json['steps']['active'])[0]
+
+    def active_previous_step(self):
+        """激活上一个步骤"""
+        self.json['steps']['active'] = self.json['steps']['value'][self.get_active_step_index() - 1]['key']
 
     def get_component(self, component_name):
         """获取组件
@@ -99,6 +117,94 @@ class SettingsManager:
         :return: 表单json
         """
         return self.json['forms'][form_name]
+
+    def get_current_step(self):
+        """获取当前正在进行的步骤"""
+        return self.json['steps']['active']
+
+    def set_current_step(self, step):
+        """设置当前步骤"""
+        self.json['steps']['active'] = step
+
+    def save(self, settings=None):
+        """保存设置
+
+        :param settings: 如果提供了此参数,则覆盖
+        """
+        write_content_to_file(self.file, json.dumps(self.json if not settings else settings, indent=4, sort_keys=True))
+
+    def add_task_to_component(self, component_name, task):
+        """添加todo任务到组件
+
+        在所有任务全部添加完毕后,记得调用save()保存
+
+        :param component_name: 组件名称
+        :param task: 任务
+        :return:
+        """
+        component = self.get_component(component_name)
+        if "todo_list" not in component:
+            component['todo_list'] = {}
+
+        # 名字重复且参数是一个列表的情况下,直接追加参数而不是新建任务
+        if task['name'] in component['todo_list'] and isinstance(task['parameters'], list):
+            component['todo_list'][task['name']]['parameters'] += task['parameters']
+        else:
+            component['todo_list'][task['name']] = task
+
+    def get_services(self):
+        """获取服务列表"""
+
+        def get_container_name(component_name):
+            """获取组件的docker容器名称
+
+            查找顺序:component_obj>sub_step>lower(component_name)
+            """
+            component = self.get_component(component_name)
+            default = snakecase(alphanumcase(component_name))
+            if "container_name" in component:
+                return component['container_name']
+            elif "sub_step" in component:
+                sub_step = self.json['forms'][component['sub_step']['key']]
+                if "container_name" in sub_step:
+                    return sub_step['container_name']
+                else:
+                    return default
+            else:
+                return default
+
+        def get_status(container_name):
+            client = docker.from_env()
+            installed = None
+            try:
+                installed = client.containers.get(container_name) is not None
+            except NotFound as e:
+                installed = False
+            running = False if not installed else client.containers.get(container_name).status == "running"
+            label = None
+            if not installed and not running:
+                label = "未安装"
+            elif installed and not running:
+                label = "未启动"
+            elif installed and running:
+                label = "运行中"
+            return {
+                "installed": installed,
+                "running": running,
+                "label": label
+            }
+
+        def component_mapper(component):
+            component_name = component['name']
+            container_name = get_container_name(component_name)
+            return {
+                "name": component_name,
+                "todo_list": component['todo_list'],
+                "container_name": container_name,
+                "status": get_status(container_name)
+            }
+
+        return list(map(component_mapper, self.json['components']))
 
 
 def dns_check(params):

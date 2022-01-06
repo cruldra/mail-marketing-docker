@@ -18,6 +18,7 @@ from docker.errors import ContainerError
 from dotenv import load_dotenv, set_key
 from redislite import Redis
 
+import tools
 from domain import DnsManager, DnsRecord
 from localhost_port import LocalHostPort
 from log import SSEHandler, formatter, logger
@@ -40,36 +41,19 @@ def __init_docker_compose_file__():
     return yaml.safe_load(p.read_text())
 
 
-def __add_todo_to_component__(component_name: str, todo):
-    with open('settings.json') as fs:
-        settings = json.load(fs)
-    component = next(x for x in settings['components'] if x['name'] == component_name)
-    if "todo_list" not in component:
-        component['todo_list'] = {}
-
-    # 名字重复且参数是一个列表的情况下
-    if todo['name'] in component['todo_list'] and isinstance(todo['parameters'], list):
-        component['todo_list'][todo['name']]['parameters'] += todo['parameters']
-    else:
-        component['todo_list'][todo['name']] = todo
-
-
 def install():
     docker_compose_doc = __init_docker_compose_file__()
-    with open('settings.json') as fs:
-        settings = json.load(fs)
+    settings_manager = tools.SettingsManager()
 
-    def component_setup(name, installer, service_name):
+    def component_setup(component_name, installer, service_name):
         """根据settings.json中的设定添加或删除组件
 
-        name:组件名称
-        installer:安装器
+        :param component_name: 组件名称
+        :param installer: 安装器
+        :param service_name: docker服务名称
         """
-        component = \
-            [item for item in settings['components'] if item.get('name') == name][0]
-        component_checked = component['checked']
-        if component_checked:
-            installer(settings, docker_compose_doc)
+        if settings_manager.get_component(component_name)['checked']:
+            installer(settings_manager, docker_compose_doc)
         else:
             docker_compose_doc['services'].pop(service_name, None)
 
@@ -80,17 +64,21 @@ def install():
     logger.info("all_done")
 
 
-def __install_phplist__(settings, docker_compose_doc):
+def __install_phplist__(settings_manager, docker_compose_doc):
     pass
 
 
-def __install_db__(settings, docker_compose_doc):
+def __install_db__(settings_manager, docker_compose_doc):
     pass
 
 
-def __install_mail_server__(settings, docker_compose_doc):
-    """安装docker mail server"""
+def __install_mail_server__(settings_manager: tools.SettingsManager, docker_compose_doc):
+    """安装docker mail server
 
+    :param settings_manager: 设置管理器
+    :param docker_compose_doc: docker-compose.yml 文档对象
+    """
+    settings = settings_manager.json
     domain_and_ip_form = settings['forms']['domainAndIp']
     dns_manager = DnsManager.code_of(domain_and_ip_form['dnsManager'])
     dns_manager.init(ak=domain_and_ip_form['ak'], sk=domain_and_ip_form['sk'])
@@ -123,21 +111,29 @@ def __install_mail_server__(settings, docker_compose_doc):
 
     # region 添加dns记录
     logger.info("添加dns记录")
+
+    def add_record_if_not_existed(record):
+        if dns_manager.check_record(record):
+            logger.info(f"记录{record}已存在")
+        else:
+            dns_manager.addRecord(record, True)
+
     r1 = DnsRecord(host=domain, name='mail', rdatatype=RdataType.A,
                    value=ip)
-    dns_manager.addRecord(r1, True)
     r2 = DnsRecord(host=domain, name='_dmarc', rdatatype=RdataType.TXT,
                    value=f"v=DMARC1; p=quarantine; rua=mailto:dmarc.report@{domain}; ruf=mailto:dmarc.report@{domain}; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; sp=quarantine")
-    dns_manager.addRecord(r2, True)
     r3 = DnsRecord(host=domain, name='@', rdatatype=RdataType.TXT,
                    value="v=spf1 mx ~all")
-    dns_manager.addRecord(r3, True)
     r4 = DnsRecord(host=domain, name='@', rdatatype=RdataType.MX,
                    value=f"mail.{domain}")
-    dns_manager.addRecord(r4, unique=True)
+    add_record_if_not_existed(r1)
+    add_record_if_not_existed(r2)
+    add_record_if_not_existed(r3)
+    add_record_if_not_existed(r4)
 
     # 添加dns检查任务到to_do_list
-    __add_todo_to_component__('Docker Mail Server', {
+    logger.info("创建dns检查任务")
+    settings_manager.add_task_to_component('Docker Mail Server', {
         "name": "check_dns_records",
         "color": random.choice(["primary", "success", "info", "warning", "danger"]),
         "label": "检查dns解析",
@@ -149,7 +145,6 @@ def __install_mail_server__(settings, docker_compose_doc):
             r1.to_json(), r2.to_json(), r3.to_json(),
             r4.to_json()]
     })
-    # settings['components']['']
     # endregion
 
     # region 申请证书
@@ -227,7 +222,7 @@ def __install_mail_server__(settings, docker_compose_doc):
     except ContainerError as e:
         logger.error(f"创建管理员账户时出现异常 {str(e)}")
     # 添加管理邮箱账户到to_do_list
-    __add_todo_to_component__('Docker Mail Server', {
+    settings_manager.add_task_to_component('Docker Mail Server', {
         "name": "manage_mail_accounts",
         "color": random.choice(["primary", "success", "info", "warning", "danger"]),
         "label": "管理邮箱账户",
@@ -255,7 +250,7 @@ def __install_mail_server__(settings, docker_compose_doc):
                        value=f'{"".join(res)}')
         dns_manager.addRecord(r5, True)
         logger.info(logs.decode("utf-8"))
-        __add_todo_to_component__('Docker Mail Server', {
+        settings_manager.add_task_to_component('Docker Mail Server', {
             "name": "check_dns_records",
             "label": "检查dns解析",
             "persistence": "once",
@@ -265,6 +260,9 @@ def __install_mail_server__(settings, docker_compose_doc):
     except ContainerError as e:
         logger.error(f"配置dkim时出现异常 {str(e)}")
     # endregion
+
+    # 保存任务设置
+    settings_manager.save()
 
     # 将docker mail server服务描述写入docker-compose.yml
     logger.info("生成服务描述文件")
@@ -287,7 +285,3 @@ def __install_mail_server__(settings, docker_compose_doc):
         "cap_add": ["NET_ADMIN", "SYS_PTRACE"]
     }
     logger.info("Docker Mail Server安装完成")
-
-
-if __name__ == '__main__':
-    install()

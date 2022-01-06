@@ -13,25 +13,28 @@ import installer
 import tools
 from db import Database
 from domain import DnsManager, get_dns_manager
-from services import get_services
 from tools import my_ip, write_content_to_file, read_file_content, indices
 
 app = Flask(__name__)
 red = Redis('./redis.db')
 
+settings_manager = tools.SettingsManager()
+
 
 @app.route("/")
 def index():
-    with open('settings.json') as fs:
-        settings = json.load(fs)
+    # 如果请求参数中明确指定的需要激活的步骤
     if "active" in request.args:
-        settings['steps']['active'] = request.args['active']
+        settings_manager.set_current_step(request.args['active'])
+
+    # 自动获取当前服务器的ip
     myip = my_ip()
-    if not settings['forms']['domainAndIp']['ip'] or settings['forms']['domainAndIp']['ip'] != myip:
-        settings['forms']['domainAndIp']['ip'] = myip
-    for com in settings['components']:
+    domain_and_ip_form = settings_manager.get_form("domainAndIp")
+    if not domain_and_ip_form['ip'] or domain_and_ip_form['ip'] != myip:
+        domain_and_ip_form['ip'] = myip
+    for com in settings_manager.json['components']:
         com['logo'] = com['logo'] if com['logo'].startswith("/static") else url_for("static", filename=com['logo'])
-    return render_template('index.html', settings=htmlsafe_dumps(settings),
+    return render_template('index.html', settings=htmlsafe_dumps(settings_manager.json),
                            dns_managers=htmlsafe_dumps(DnsManager.to_json_array()),
                            databases=htmlsafe_dumps(Database.to_json_array()))
 
@@ -39,7 +42,7 @@ def index():
 @app.route("/services")
 def services():
     """跳转到服务管理控制台"""
-    return render_template('services.html', services=htmlsafe_dumps(get_services()))
+    return render_template('services.html', services=htmlsafe_dumps(settings_manager.get_services()))
 
 
 @app.route("/install")
@@ -69,13 +72,9 @@ def install_progress():
 
 @app.route("/previous", methods=['POST'])
 def previous_step():
-    fs = open('settings.json')
-    settings = json.load(fs)
-    fs.close()
-    current_active_index = indices(settings['steps']['value'],
-                                   lambda e: e['key'] == settings['steps']['active'])[0]
-    settings['steps']['active'] = settings['steps']['value'][current_active_index - 1]['key']
-    write_content_to_file('settings.json', json.dumps(settings, indent=4, sort_keys=True))
+    settings_manager.reload()
+    settings_manager.active_previous_step()
+    settings_manager.save()
     return redirect(url_for("index"))
 
 
@@ -86,10 +85,10 @@ def next_step():
                                    lambda e: e['key'] == settings_json['steps']['active'])[0]
     if current_active_index + 1 < len(settings_json['steps']['value']):
         settings_json['steps']['active'] = settings_json['steps']['value'][current_active_index + 1]['key']
-        write_content_to_file('settings.json', json.dumps(settings_json, indent=4, sort_keys=True))
+        settings_manager.save(settings_json)
         return redirect(url_for("index"))
     else:
-        write_content_to_file('settings.json', json.dumps(settings_json, indent=4, sort_keys=True))
+        settings_manager.save(settings_json)
         return redirect(url_for("install"))
 
 
