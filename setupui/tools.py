@@ -102,7 +102,7 @@ class SettingsManager:
         :param task: 任务
         """
         if task['persistence'] == "once":
-            self.get_component(component_name)['todo_list'].pop(task.name, None)
+            self.get_component(component_name)['todo_list'].pop(task['name'], None)
 
     def get_active_step_index(self):
         """获取当前激活的步骤的索引"""
