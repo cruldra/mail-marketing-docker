@@ -101,13 +101,12 @@
                 this.selected_account = account
             },
             update_pwd() {
-
                 $.ajax({
                     type: "post",
                     url: '{{url_for("update_mail_account_pwd")}}',
                     data: {
                         'username': this.selected_account.username,
-                        'new_pwd': this.update_pwd_dialog.from.new_pwd
+                        'new_pwd': this.update_pwd_dialog.form.new_pwd
                     },
                     dataType: "json",
                     success: (resp) => {
