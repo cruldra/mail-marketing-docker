@@ -210,7 +210,7 @@ class SettingsManager:
             container_name = get_container_name(component_name)
             return {
                 "name": component_name,
-                "todo_list": component['todo_list'],
+                "todo_list": component.get('todo_list', {}),
                 "container_name": container_name,
                 "status": get_status(container_name)
             }

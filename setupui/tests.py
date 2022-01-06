@@ -57,6 +57,11 @@ class JsonTests(unittest.TestCase):
     def test_serialize_tunple(self):
         print(json.dumps((True, "asdfa")))
 
+    def test_get_dict_key(self):
+        dict = {}
+        # print(dict['todo_list']) # KeyError: 'todo_list'
+        print(dict.get("todo_list", "1"))
+
     def test_serialize(self):
         print(json.dumps(DnsRecord(host="domain", name='mail', rdatatype=RdataType.A,
                                    value="ip"), default=lambda obj: {
