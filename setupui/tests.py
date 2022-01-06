@@ -33,6 +33,15 @@ from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord, DnsE
 from tools import download_file
 
 
+class DockerClientTests(unittest.TestCase):
+    def test_run_container_and_return_log(self):
+        client = docker.from_env()
+        logs=client.containers.run('ubuntu:latest',  detach=False, auto_remove=False,
+                                     tty=False,
+                                     stdin_open=False,command=f'echo 12121')
+
+        re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', logs.decode("utf-8"))
+
 class MunchTests(unittest.TestCase):
     def test_dict_obj(self):
         # print(DefaultMunch.fromDict({"host": '11'}).host)
