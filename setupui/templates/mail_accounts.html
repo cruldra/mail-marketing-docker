@@ -59,7 +59,8 @@
         </el-col>
     </el-row>
 
-    <el-dialog title="修改密码" :visible.sync="update_pwd_dialog.visible" width="30%" center>
+    <el-dialog title="修改密码" :visible.sync="update_pwd_dialog.visible" width="30%" center close-on-click-modal="false"
+               close-on-press-escape="false">
         <el-form :model="update_pwd_dialog.form">
             <el-form-item label="新密码">
                 <el-input v-model="update_pwd_dialog.form.new_pwd" autocomplete="off" style="width:80%"></el-input>
