@@ -31,7 +31,7 @@ class MailAccountManager:
                                          self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
                                                                                   'mode': 'rw'}},
                                      command=f"""setup email list""")
-        return re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', logs)
+        return re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', logs.decode("utf-8"))
 
     def add(self, name, pwd):
         """添加邮箱账户
