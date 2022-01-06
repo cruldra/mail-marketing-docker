@@ -133,14 +133,18 @@ def todo():
 
 @app.route("/mail-server/accounts")
 def manage_mail_accounts():
-    pass
+    settings_manager.reload()
+    set_mail_server_form = settings_manager.get_form('setMailServer')
+    mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
+    mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
+    return mail_account_manager.list()
 
 
 @app.route("/mail-server/accounts/pwd/update", methods=['POST'])
 def update_mail_account_pwd():
     """修改邮箱账户密码"""
     try:
-        settings_manager = tools.SettingsManager()
+        settings_manager.reload()
         set_mail_server_form = settings_manager.get_form('setMailServer')
         mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
         mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
