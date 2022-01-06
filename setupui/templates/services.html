@@ -106,7 +106,7 @@
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     success: (resp) => {
-                        if (resp.code === 0)
+                        if (resp.code === 0) {
                             if (task['redirect'])
                                 window.location.href = resp.data
                             else
@@ -115,13 +115,14 @@
                                     message: resp.data
                                 });
 
-                        if (task['persistence'] === "once")
-                            delete service['todo_list'][task.name]
-                        else
+                            if (task['persistence'] === "once")
+                                delete service['todo_list'][task.name]
+                        } else {
                             this.$notify.error({
                                 title: task.label,
                                 message: resp.msg
                             });
+                        }
                     }
                 });
             }
