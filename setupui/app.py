@@ -2,6 +2,7 @@ import asyncio
 import json
 import _thread
 import os
+import traceback
 from inspect import getmembers, isfunction
 
 from flask import Flask, render_template, request, url_for, redirect, Response
@@ -123,6 +124,7 @@ def todo():
         return res
 
     except Exception as e:
+        traceback.print_exc()
         return {
             "code": 1,
             "msg": str(e)
