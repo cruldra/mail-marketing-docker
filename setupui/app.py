@@ -26,8 +26,9 @@ def index():
         settings = json.load(fs)
     if "active" in request.args:
         settings['steps']['active'] = request.args['active']
-    if not settings['forms']['domainAndIp']['ip']:
-        settings['forms']['domainAndIp']['ip'] = my_ip()
+    myip = my_ip()
+    if not settings['forms']['domainAndIp']['ip'] or settings['forms']['domainAndIp']['ip'] != myip:
+        settings['forms']['domainAndIp']['ip'] = myip
     for com in settings['components']:
         com['logo'] = com['logo'] if com['logo'].startswith("/static") else url_for("static", filename=com['logo'])
     return render_template('index.html', settings=htmlsafe_dumps(settings),
