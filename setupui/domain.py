@@ -31,6 +31,14 @@ class DnsRecord:
                 return True
         return False
 
+    @classmethod
+    def from_dict(cls, dic: dict):
+        return DnsRecord(host=dic['host'],
+                         name=dic['name'],
+                         value=dic['value'],
+                         ttl=dic.get('ttl'),
+                         rdatatype=RdataType(dic['type']))
+
     @DynamicClassAttribute
     def id(self):
         return self.__id__
@@ -161,7 +169,7 @@ class DnsManager(IDnsManager, Enum):
                     "name": record.name,
                     "type": record.rdatatype.name,
                     "content": record.value,
-                    "ttl": 1,
+                    "ttl": record.ttl if record.ttl else 1,
                     'priority': 10
                 })
 

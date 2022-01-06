@@ -12,7 +12,7 @@ import rich
 from docker.errors import NotFound
 from stringcase import snakecase, alphanumcase
 
-from domain import DnsManager
+from domain import DnsManager, DnsRecord
 
 
 class MailAccountManager:
@@ -228,6 +228,8 @@ def dns_check(params):
     msg = ""
     # dns_manager.check_record()
     for record in params[1: len(params)]:
+        if not isinstance(record, DnsRecord):
+            record = DnsRecord.from_dict(record)
         if not dns_manager.check_record(record):
             msg += f"记录[{str(record)}{os.linesep}]不存在或不正确"
     return "所有记录已正确配置" if not msg else msg

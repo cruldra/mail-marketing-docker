@@ -21,6 +21,7 @@ from dns.rdatatype import RdataType
 from docker import APIClient
 from dotenv import load_dotenv, set_key
 from flask import url_for
+from munch import DefaultMunch
 from redislite import Redis
 from stringcase import snakecase, alphanumcase
 from termcolor import colored
@@ -30,6 +31,20 @@ import app
 import tools
 from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord, DnsException
 from tools import download_file
+
+
+class MunchTests(unittest.TestCase):
+    def test_dict_obj(self):
+        # print(DefaultMunch.fromDict({"host": '11'}).host)
+        dic = {
+            "host": "9l2z.xyz",
+            "name": "_dmarc",
+            "type": 16,
+            "value": "v=DMARC1; p=quarantine; rua=mailto:dmarc.report@9l2z.xyz; ruf=mailto:dmarc.report@9l2z.xyz; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; sp=quarantine"
+        }
+        self.assertFalse(isinstance(dic, DnsRecord))
+        self.assertEqual(dic.get("safa"), None)
+        self.assertTrue(isinstance(DnsRecord.from_dict(dic), DnsRecord))
 
 
 class ExceptionTests(unittest.TestCase):
