@@ -58,7 +58,7 @@ class MailAccountManager:
                                                       'mode': 'rw'}},
                                               command=f"""setup email add {name} {pwd}""")
             container.wait()
-            logger.info(container.logs())
+            logger.info(container.logs().decode('utf-8'))
         finally:
             if container:
                 container.remove()
@@ -71,16 +71,18 @@ class MailAccountManager:
         """
 
         client = docker.from_env()
+        container = None
         try:
-            client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                                  tty=False,
-                                  stdin_open=False,
-                                  volumes={
-                                      self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
-                                                                               'mode': 'rw'}},
-                                  command=f"""setup email update {name} {npwd}""")
-        except ContainerError as e:
-            traceback.print_exc()
+            container = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=True,
+                                              volumes={
+                                                  self.__docker_mail_server_config_dir__: {
+                                                      'bind': f'/tmp/docker-mailserver',
+                                                      'mode': 'rw'}},
+                                              command=f"""setup email update {name} {npwd}""")
+            container.wait()
+        finally:
+            if container:
+                container.remove()
 
     def delete(self, name):
         """删除邮箱账户
@@ -89,16 +91,18 @@ class MailAccountManager:
         """
 
         client = docker.from_env()
+        container = None
         try:
-            client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                                  tty=False,
-                                  stdin_open=False,
-                                  volumes={
-                                      self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
-                                                                               'mode': 'rw'}},
-                                  command=f"""setup email del {name}""")
-        except ContainerError as e:
-            traceback.print_exc()
+            container = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=True,
+                                              volumes={
+                                                  self.__docker_mail_server_config_dir__: {
+                                                      'bind': f'/tmp/docker-mailserver',
+                                                      'mode': 'rw'}},
+                                              command=f"""setup email del {name}""")
+            container.wait()
+        finally:
+            if container:
+                container.remove()
 
 
 class SettingsManager:
