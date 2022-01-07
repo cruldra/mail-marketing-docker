@@ -14,6 +14,7 @@ from docker.errors import NotFound, ContainerError
 from stringcase import snakecase, alphanumcase
 
 from domain import DnsManager, DnsRecord
+from log import logger
 
 
 class MailAccountManager:
@@ -48,16 +49,19 @@ class MailAccountManager:
         """
 
         client = docker.from_env()
+        container = None
         try:
-            client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                                  tty=False,
-                                  stdin_open=False,
-                                  volumes={
-                                      self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
-                                                                               'mode': 'rw'}},
-                                  command=f"""setup email add {name} {pwd}""")
-        except ContainerError as e:
-            traceback.print_exc()
+            container = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=True,
+                                              volumes={
+                                                  self.__docker_mail_server_config_dir__: {
+                                                      'bind': f'/tmp/docker-mailserver',
+                                                      'mode': 'rw'}},
+                                              command=f"""setup email add {name} {pwd}""")
+            container.wait()
+            logger.info(container.logs())
+        finally:
+            if container:
+                container.remove()
 
     def update(self, name, npwd):
         """修改账户密码

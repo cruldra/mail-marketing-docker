@@ -141,6 +141,34 @@ def manage_mail_accounts():
                            accounts=htmlsafe_dumps(list(map(lambda s: {"username": s}, mail_account_manager.list()))))
 
 
+@app.route("/mail-server/accounts", methods=['POST'])
+def add_mail_account():
+    """添加邮箱账户"""
+    try:
+        settings_manager.reload()
+        set_mail_server_form = settings_manager.get_form('setMailServer')
+        domain_and_ip_form = settings_manager.get_form('domainAndIp')
+        mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
+        mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
+
+        mail_account_username = request.form['username'] if "@" in request.form[
+            'username'] else f"{request.form['username']}@{domain_and_ip_form['domain']}"
+
+        mail_account_manager.add(mail_account_username, request.form['password'])
+        if mail_account_username not in ",".join(mail_account_manager.list()):
+            raise Exception("账户添加失败")
+        return {
+            "code": 0,
+            "msg": '账户已添加'
+        }
+    except Exception as e:
+        traceback.print_exc()
+        return {
+            "code": 1,
+            "msg": str(e)
+        }
+
+
 @app.route("/mail-server/accounts/pwd/update", methods=['POST'])
 def update_mail_account_pwd():
     """修改邮箱账户密码"""
