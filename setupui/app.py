@@ -19,14 +19,14 @@ from tools import my_ip, write_content_to_file, read_file_content, indices
 app = Flask(__name__)
 red = Redis('./redis.db')
 
-settings_manager = tools.SettingsManager()
-
 
 @app.route("/")
 def index():
+    settings_manager = tools.SettingsManager()
     # 如果请求参数中明确指定的需要激活的步骤
     if "active" in request.args:
         settings_manager.set_current_step(request.args['active'])
+        settings_manager.save()
 
     # 自动获取当前服务器的ip
     myip = my_ip()
@@ -43,7 +43,7 @@ def index():
 @app.route("/services")
 def services():
     """跳转到服务管理控制台"""
-    return render_template('services.html', services=htmlsafe_dumps(settings_manager.get_services()))
+    return render_template('services.html', services=htmlsafe_dumps(tools.SettingsManager().get_services()))
 
 
 @app.route("/install")
@@ -73,7 +73,7 @@ def install_progress():
 
 @app.route("/previous", methods=['POST'])
 def previous_step():
-    settings_manager.reload()
+    settings_manager = tools.SettingsManager()
     settings_manager.active_previous_step()
     settings_manager.save()
     return redirect(url_for("index"))
@@ -82,15 +82,15 @@ def previous_step():
 @app.route("/next", methods=['POST'])
 def next_step():
     settings_json = json.loads(request.form['json'])
-    current_active_index = indices(settings_json['steps']['value'],
-                                   lambda e: e['key'] == settings_json['steps']['active'])[0]
-    if current_active_index + 1 < len(settings_json['steps']['value']):
-        settings_json['steps']['active'] = settings_json['steps']['value'][current_active_index + 1]['key']
-        settings_manager.save(settings_json)
-        return redirect(url_for("index"))
-    else:
-        settings_manager.save(settings_json)
-        return redirect(url_for("install"))
+    settings_manager = tools.SettingsManager(doc=settings_json)
+    try:
+        if settings_manager.has_next_step():
+            settings_manager.active_next_step()
+            return redirect(url_for("index"))
+        else:
+            return redirect(url_for("install"))
+    finally:
+        settings_manager.save()
 
 
 @app.route("/dns/detect")
@@ -118,7 +118,7 @@ def todo():
                 "data": func(task['parameters'])
             }
 
-        settings_manager.reload()
+        settings_manager = tools.SettingsManager()
         settings_manager.component_task_completed(component_name, task)
         settings_manager.save()
         return res
@@ -133,7 +133,7 @@ def todo():
 
 @app.route("/mail-server/accounts")
 def manage_mail_accounts():
-    settings_manager.reload()
+    settings_manager = tools.SettingsManager()
     set_mail_server_form = settings_manager.get_form('setMailServer')
     mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
     mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
@@ -145,7 +145,7 @@ def manage_mail_accounts():
 def add_mail_account():
     """添加邮箱账户"""
     try:
-        settings_manager.reload()
+        settings_manager = tools.SettingsManager()
         set_mail_server_form = settings_manager.get_form('setMailServer')
         domain_and_ip_form = settings_manager.get_form('domainAndIp')
         mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
@@ -173,7 +173,7 @@ def add_mail_account():
 def update_mail_account_pwd():
     """修改邮箱账户密码"""
     try:
-        settings_manager.reload()
+        settings_manager = tools.SettingsManager()
         set_mail_server_form = settings_manager.get_form('setMailServer')
         mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
         mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
@@ -194,7 +194,7 @@ def update_mail_account_pwd():
 def del_mail_account():
     """删除邮箱账户"""
     try:
-        settings_manager.reload()
+        settings_manager = tools.SettingsManager()
         set_mail_server_form = settings_manager.get_form('setMailServer')
         mail_server_config_dir = os.path.abspath(f"{__file__}/../../{set_mail_server_form['data_dir']}/config")
         mail_account_manager = tools.MailAccountManager(mail_server_config_dir)

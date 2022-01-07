@@ -3,3 +3,10 @@
 .mysqldata
 setupui/redis.db
 setupui/redis.db.setting
+ms.env
+docker-compose.yml
+.logs
+.vscode
+.mysqldata
+.mailserver-data
+.idea

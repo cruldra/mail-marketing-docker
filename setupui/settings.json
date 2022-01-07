@@ -25,11 +25,16 @@
             "url": "https://github.com/docker-mailserver/docker-mailserver"
         },
         {
-            "checked": false,
+            "checked": true,
             "description": "\u5f00\u6e90\u514d\u8d39\u7684\u90ae\u4ef6\u8425\u9500\u7ba1\u7406\u8f6f\u4ef6",
             "logo": "/static/phplist.jpeg",
             "msg": "\u4f60\u53ef\u4ee5\u5728\u6b64\u7ba1\u7406\u8ba2\u9605\u7528\u6237\u3001\u8425\u9500\u6d3b\u52a8\u5e76\u521b\u5efa\u8ba1\u5212",
             "name": "phpList",
+            "sub_step": {
+                "description": "",
+                "key": "setPhplist",
+                "title": "\u8bbe\u7f6ephplist"
+            },
             "url": "https://www.phplist.org/"
         },
         {
@@ -50,7 +55,7 @@
             "ak": "",
             "dnsManager": "cloudflare",
             "domain": "9l2z.xyz",
-            "ip": "103.47.113.84",
+            "ip": "34.92.191.73",
             "sk": "ozTikFmlS9bxLmnJqLc80uCLCeBAQvcXOJ8mTVeW"
         },
         "setDatabase": {
@@ -87,6 +92,12 @@
             "container_name": "mailserver",
             "data_dir": "./.mailserver-data/",
             "dns": "1.1.1.1"
+        },
+        "setPhplist": {
+            "container_name": "phplist",
+            "php_ini": "./config/php/php.ini",
+            "phplist_config_file": "./config/phplist/config.php",
+            "port": 1231
         }
     },
     "rules": {
@@ -118,10 +129,11 @@
                 "trigger": "blur"
             }
         },
-        "setMailServer": {}
+        "setMailServer": {},
+        "setPhplist": {}
     },
     "steps": {
-        "active": "setMailServer",
+        "active": "setPhplist",
         "value": [
             {
                 "description": "",
@@ -137,6 +149,11 @@
                 "description": "",
                 "key": "setMailServer",
                 "title": "\u8bbe\u7f6e\u90ae\u4ef6\u670d\u52a1\u5668"
+            },
+            {
+                "description": "",
+                "key": "setPhplist",
+                "title": "\u8bbe\u7f6ephplist"
             }
         ]
     }

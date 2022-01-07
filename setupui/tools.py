@@ -107,15 +107,14 @@ class MailAccountManager:
 
 class SettingsManager:
 
-    def __init__(self, file='settings.json'):
+    def __init__(self, **kwargs):
         self.json = None
-        self.file = file
-        self.reload()
-
-    def reload(self):
-        """重新加载设置文档"""
-        with open(self.file) as fs:
-            self.json = json.load(fs)
+        self.file = kwargs.get('file', 'settings.json')
+        if "doc" in kwargs:
+            self.json = kwargs['doc']
+        else:
+            with open(self.file) as fs:
+                self.json = json.load(fs)
 
     def component_task_completed(self, component_name, task):
         """指示组件的某个任务已完成
@@ -130,13 +129,20 @@ class SettingsManager:
 
     def get_active_step_index(self):
         """获取当前激活的步骤的索引"""
-
         return indices(self.json['steps']['value'],
                        lambda e: e['key'] == self.json['steps']['active'])[0]
 
     def active_previous_step(self):
         """激活上一个步骤"""
         self.json['steps']['active'] = self.json['steps']['value'][self.get_active_step_index() - 1]['key']
+
+    def has_next_step(self):
+        """判断文档是否可以进行下一步"""
+        return self.get_active_step_index() + 1 < len(self.json['steps']['value'])
+
+    def active_next_step(self):
+        """激活下一个步骤"""
+        self.json['steps']['active'] = self.json['steps']['value'][self.get_active_step_index() + 1]['key']
 
     def get_component(self, component_name):
         """获取组件
@@ -161,12 +167,9 @@ class SettingsManager:
         """设置当前步骤"""
         self.json['steps']['active'] = step
 
-    def save(self, settings=None):
-        """保存设置
-
-        :param settings: 如果提供了此参数,则覆盖
-        """
-        write_content_to_file(self.file, json.dumps(self.json if not settings else settings, indent=4, sort_keys=True))
+    def save(self):
+        """保存设置"""
+        write_content_to_file(self.file, json.dumps(self.json, indent=4, sort_keys=True))
 
     def add_task_to_component(self, component_name, task):
         """添加todo任务到组件

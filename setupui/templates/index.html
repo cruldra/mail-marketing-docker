@@ -210,6 +210,38 @@
         </el-col>
     </el-row>
 
+    <!--设置phplist-->
+    <el-row v-if="settings.steps.active=='setPhplist'" :gutter="20">
+        <el-col :span="4">
+            <div class="grid-content bg-purple"></div>
+        </el-col>
+        <el-col :span="16">
+            <el-form ref="setPhplistForm" id="setPhplistForm" :model="settings.forms.setPhplist"
+                     :rules="settings.rules.setPhplist"
+                     label-width="100px">
+                <el-form-item label="容器名称" prop="container_name">
+                    <el-input v-model="settings.forms.setPhplist.container_name"></el-input>
+                </el-form-item>
+                <el-form-item label="端口" prop="port">
+                    <el-input-number v-model="settings.forms.setPhplist.port" :min="1" :max="65535"></el-input-number>
+                </el-form-item>
+                <el-form-item label="php.ini" prop="php_ini">
+                    <el-input v-model="settings.forms.setPhplist.php_ini"></el-input>
+                </el-form-item>
+                <el-form-item label="配置文件" prop="phplist_config_file">
+                    <el-input v-model="settings.forms.setPhplist.phplist_config_file"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="previous_step">上一步</el-button>
+                    <el-button type="primary" @click="submitForm('setPhplistForm')">下一步</el-button>
+                </el-form-item>
+            </el-form>
+        </el-col>
+        <el-col :span="4">
+            <div class="grid-content bg-purple"></div>
+        </el-col>
+    </el-row>
+
     <!--数据库设置-->
     <el-row v-if="settings.steps.active=='setDatabase'" :gutter="20">
         <el-col :span="4">
