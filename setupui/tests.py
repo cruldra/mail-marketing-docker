@@ -19,6 +19,7 @@ import rich
 import yaml
 from dns.rdatatype import RdataType
 from docker import APIClient
+from docker.errors import ContainerError
 from dotenv import load_dotenv, set_key
 from flask import url_for
 from munch import DefaultMunch
@@ -36,11 +37,11 @@ from tools import download_file
 class DockerClientTests(unittest.TestCase):
     def test_run_container_and_return_log(self):
         client = docker.from_env()
-        logs=client.containers.run('ubuntu:latest',  detach=False, auto_remove=False,
-                                     tty=False,
-                                     stdin_open=False,command=f'echo 12121')
-
-        re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', logs.decode("utf-8"))
+        container=client.containers.run('ubuntu:latest',  detach=True,  command=f'echo 12121')
+        print(container.wait())
+        print(container.logs())
+        container.remove()
+        #re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', logs.decode("utf-8"))
 
 class MunchTests(unittest.TestCase):
     def test_dict_obj(self):

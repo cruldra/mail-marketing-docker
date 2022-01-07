@@ -24,19 +24,21 @@ class MailAccountManager:
 
     def list(self):
         """获取邮件账户列表"""
-        client = docker.from_env()
+        container = None
         try:
-            logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                                         tty=False,
-                                         stdin_open=False,
-                                         volumes={
-                                             self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
-                                                                                      'mode': 'rw'}},
-                                         command=f"""setup email list""")
-        except ContainerError as e:
-            traceback.print_exc()
-            logs = e.container.logs()
-        return re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', logs.decode("utf-8"))
+            client = docker.from_env()
+            container = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=True,
+                                              volumes={
+                                                  self.__docker_mail_server_config_dir__: {
+                                                      'bind': f'/tmp/docker-mailserver',
+                                                      'mode': 'rw'}},
+                                              command=f"""setup email list""")
+            container.wait()
+
+            return re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', container.logs().decode("utf-8"))
+        finally:
+            if container:
+                container.remove()
 
     def add(self, name, pwd):
         """添加邮箱账户
