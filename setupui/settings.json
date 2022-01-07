@@ -11,6 +11,17 @@
                 "key": "setMailServer",
                 "title": "\u8bbe\u7f6e\u90ae\u4ef6\u670d\u52a1\u5668"
             },
+            "todo_list": {
+                "manage_mail_accounts": {
+                    "color": "primary",
+                    "endpoint": "manage_mail_accounts",
+                    "label": "\u7ba1\u7406\u90ae\u7bb1\u8d26\u6237",
+                    "name": "manage_mail_accounts",
+                    "parameters": {},
+                    "persistence": "every",
+                    "redirect": true
+                }
+            },
             "url": "https://github.com/docker-mailserver/docker-mailserver"
         },
         {
@@ -39,7 +50,7 @@
             "ak": "",
             "dnsManager": "cloudflare",
             "domain": "9l2z.xyz",
-            "ip": "194.5.78.236",
+            "ip": "103.47.113.84",
             "sk": "ozTikFmlS9bxLmnJqLc80uCLCeBAQvcXOJ8mTVeW"
         },
         "setDatabase": {
@@ -110,7 +121,7 @@
         "setMailServer": {}
     },
     "steps": {
-        "active": "selectComponents",
+        "active": "setMailServer",
         "value": [
             {
                 "description": "",
