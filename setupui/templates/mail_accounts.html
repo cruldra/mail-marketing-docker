@@ -186,7 +186,7 @@
                 $.ajax({
                     type: "post",
                     url: '{{url_for("add_mail_account")}}',
-                    data: new_mail_account_dialog.form,
+                    data: this.new_mail_account_dialog.form,
                     dataType: "json",
                     success: (resp) => {
                         if (resp.code === 0) {
