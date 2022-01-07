@@ -155,6 +155,7 @@ def update_mail_account_pwd():
             "msg": '密码已修改'
         }
     except Exception as e:
+        traceback.print_exc()
         return {
             "code": 1,
             "msg": str(e)
@@ -175,6 +176,7 @@ def del_mail_account():
             "msg": '已删除'
         }
     except Exception as e:
+        traceback.print_exc()
         return {
             "code": 1,
             "msg": str(e)

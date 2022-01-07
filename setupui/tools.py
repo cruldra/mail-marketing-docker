@@ -2,6 +2,7 @@ import json
 import os
 import re
 import socket
+import traceback
 
 import docker
 import httpx
@@ -9,7 +10,7 @@ import requests
 from pathlib import Path
 
 import rich
-from docker.errors import NotFound
+from docker.errors import NotFound, ContainerError
 from stringcase import snakecase, alphanumcase
 
 from domain import DnsManager, DnsRecord
@@ -24,13 +25,17 @@ class MailAccountManager:
     def list(self):
         """获取邮件账户列表"""
         client = docker.from_env()
-        logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                                     tty=False,
-                                     stdin_open=False,
-                                     volumes={
-                                         self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
-                                                                                  'mode': 'rw'}},
-                                     command=f"""setup email list""")
+        try:
+            logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
+                                         tty=False,
+                                         stdin_open=False,
+                                         volumes={
+                                             self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
+                                                                                      'mode': 'rw'}},
+                                         command=f"""setup email list""")
+        except ContainerError as e:
+            traceback.print_exc()
+            logs = e.container.logs()
         return re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', logs.decode("utf-8"))
 
     def add(self, name, pwd):
@@ -41,13 +46,16 @@ class MailAccountManager:
         """
 
         client = docker.from_env()
-        client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                              tty=False,
-                              stdin_open=False,
-                              volumes={
-                                  self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
-                                                                           'mode': 'rw'}},
-                              command=f"""setup email add {name} {pwd}""")
+        try:
+            client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
+                                  tty=False,
+                                  stdin_open=False,
+                                  volumes={
+                                      self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
+                                                                               'mode': 'rw'}},
+                                  command=f"""setup email add {name} {pwd}""")
+        except ContainerError as e:
+            traceback.print_exc()
 
     def update(self, name, npwd):
         """修改账户密码
@@ -57,13 +65,16 @@ class MailAccountManager:
         """
 
         client = docker.from_env()
-        client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                              tty=False,
-                              stdin_open=False,
-                              volumes={
-                                  self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
-                                                                           'mode': 'rw'}},
-                              command=f"""setup email update {name} {npwd}""")
+        try:
+            client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
+                                  tty=False,
+                                  stdin_open=False,
+                                  volumes={
+                                      self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
+                                                                               'mode': 'rw'}},
+                                  command=f"""setup email update {name} {npwd}""")
+        except ContainerError as e:
+            traceback.print_exc()
 
     def delete(self, name):
         """删除邮箱账户
@@ -72,13 +83,16 @@ class MailAccountManager:
         """
 
         client = docker.from_env()
-        client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                              tty=False,
-                              stdin_open=False,
-                              volumes={
-                                  self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
-                                                                           'mode': 'rw'}},
-                              command=f"""setup email del {name}""")
+        try:
+            client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
+                                  tty=False,
+                                  stdin_open=False,
+                                  volumes={
+                                      self.__docker_mail_server_config_dir__: {'bind': f'/tmp/docker-mailserver',
+                                                                               'mode': 'rw'}},
+                                  command=f"""setup email del {name}""")
+        except ContainerError as e:
+            traceback.print_exc()
 
 
 class SettingsManager:
