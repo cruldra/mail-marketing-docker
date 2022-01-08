@@ -241,7 +241,6 @@ class SettingsManager:
 
         def get_status(container_name):
             client = docker.from_env()
-            installed = None
             try:
                 installed = client.containers.get(container_name) is not None
             except NotFound as e:

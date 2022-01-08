@@ -69,7 +69,7 @@ def __install_phplist__(settings_manager, docker_compose_doc):
     logger.info("生成phplist服务描述文件")
     set_phplist_form = settings_manager.get_form('setPhplist')
     docker_compose_doc['services']['phplist'] = {
-        "build": "./phplist",
+        "image": "dongjak/phplist:3.6.6",
         "container_name": set_phplist_form.get('container_name', 'phplist'),
         "ports": [f"{set_phplist_form.get('port', '1231')}:80"],
         "volumes": [f"{set_phplist_form.get('php_ini', './config/php/php.ini')}:/usr/local/etc/php/php.ini",
