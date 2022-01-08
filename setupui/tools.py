@@ -248,7 +248,10 @@ class SettingsManager:
             client = docker.from_env()
             installed = any(lambda service: service['container_name'] == container_name for service in
                             docker_compose_yml['services'])
-            running = False if not installed else client.containers.get(container_name).status == "running"
+            try:
+                running = False if not installed else client.containers.get(container_name).status == "running"
+            except NotFound:
+                running = False
             label = None
             if not installed and not running:
                 label = "未安装"
