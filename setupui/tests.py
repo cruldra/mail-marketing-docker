@@ -34,10 +34,13 @@ import tools
 from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord, DnsException
 from tools import download_file
 
+
 class ArrayStreamTests(unittest.TestCase):
     def test_foreach_lambda(self):
-        #[(lambda x: print(x))(x) for x in range(10)]
+        # [(lambda x: print(x))(x) for x in range(10)]
         [(lambda x: print(x))(x) for x in range(10)]
+
+
 class DictTests(unittest.TestCase):
     def test_eq(self):
         d1 = {
@@ -53,6 +56,50 @@ class DictTests(unittest.TestCase):
             "value": "103.47.113.84"
         }
         self.assertTrue(d1 == d2)
+
+    def test_foreach(self):
+
+        services = [{"container_name": "mailserver", "manage_url": "", "name": "Docker Mail Server",
+                     "status": {"installed": True, "label": "未启动", "running": False}, "todo_list": {
+                "check_dns_records": {"color": "warning", "endpoint": "dns_check", "label": "检查dns解析",
+                                      "name": "check_dns_records", "parameters": [
+                        {"ak": "", "name": "cloudflare", "sk": "ozTikFmlS9bxLmnJqLc80uCLCeBAQvcXOJ8mTVeW"},
+                        {"host": "9l2z.xyz", "name": "mail", "type": 1, "value": "103.47.113.84"},
+                        {"host": "9l2z.xyz", "name": "_dmarc", "type": 16,
+                         "value": "v=DMARC1; p=quarantine; rua=mailto:dmarc.report@9l2z.xyz; ruf=mailto:dmarc.report@9l2z.xyz; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; sp=quarantine"},
+                        {"host": "9l2z.xyz", "name": "@", "type": 16, "value": "v=spf1 mx ~all"},
+                        {"host": "9l2z.xyz", "name": "@", "type": 15, "value": "mail.9l2z.xyz"}], "persistence": "once",
+                                      "redirect": False},
+                "manage_mail_accounts": {"color": "danger", "endpoint": "manage_mail_accounts", "label": "管理邮箱账户",
+                                         "name": "manage_mail_accounts", "parameters": {}, "persistence": "every",
+                                         "redirect": True}}},
+                    {"container_name": "phplist", "manage_url": "http://103.47.113.84:1231/admin", "name": "phpList",
+                     "status": {"installed": True, "label": "未启动", "running": False}, "todo_list": {}},
+                    {"container_name": "db", "manage_url": "http://103.47.113.84:8081", "name": "Database",
+                     "status": {"installed": True, "label": "未启动", "running": False}, "todo_list": {}}]
+        service_names = list(map(lambda it: it['container_name'], services))
+        p = Path(os.path.abspath(__file__ + "/../../docker-compose-example.yml"))
+        docker_compose_yml = yaml.safe_load(p.read_text())
+        serviecs_dict = docker_compose_yml['services']
+        for key in serviecs_dict:
+            container_name = serviecs_dict[key]['container_name']
+
+            if container_name not in service_names:
+                services.extend([{
+                    "name": key,
+                    "container_name": container_name,
+                    "status": ""
+                }])
+
+        container_name = "mailserver1"
+
+        def predicate(key):
+            return docker_compose_yml['services'][key]['container_name'] == container_name
+
+        # for service in docker_compose_yml['services']:
+        #     print(predicate(service))
+        print(any(predicate(service) for service in docker_compose_yml['services']))
+        # print(json.dumps(services, indent=4, sort_keys=True))
 
 
 class MailAccountManagerTests(unittest.TestCase):
@@ -220,7 +267,7 @@ class CallShellCommandTests(unittest.TestCase):
         # print(os.system("""
         # cat  /Users/liuye/fsdownload/mail.txt
         # """))
-        #print(os.system("which ngrok"))
+        # print(os.system("which ngrok"))
         print(os.system("docker-compose -f "))
 
     def test_cat_mail_txt(self):

@@ -216,7 +216,7 @@ class SettingsManager:
         # 名字重复且参数是一个列表的情况下,直接追加参数而不是新建任务
         if task['name'] in component['todo_list'] and isinstance(task['parameters'], list):
             for p in task['parameters']:
-                if not any(lambda p1: p1 == p for p1 in component['todo_list'][task['name']]['parameters']):
+                if not any((lambda p1: p1 == p)(p1) for p1 in component['todo_list'][task['name']]['parameters']):
                     component['todo_list'][task['name']]['parameters'] += [p]
         else:
             component['todo_list'][task['name']] = task
@@ -246,8 +246,9 @@ class SettingsManager:
 
         def get_status(container_name):
             client = docker.from_env()
-            installed = any(lambda service: service['container_name'] == container_name for service in
-                            docker_compose_yml['services'])
+            installed = any(
+                (lambda key: docker_compose_yml['services'][key]['container_name'] == container_name)(key) for key in
+                docker_compose_yml['services'])
             try:
                 running = False if not installed else client.containers.get(container_name).status == "running"
             except NotFound:
@@ -277,11 +278,12 @@ class SettingsManager:
             }
 
         services = list(map(component_mapper, self.json['components']))
-        for sk in docker_compose_yml['services'].keys():
-            container_name = docker_compose_yml['services'][sk]['container_name']
-            if not any(lambda service: service['container_name'] == container_name for _ in services):
+        service_names = list(map(lambda it: it['container_name'], services))
+        for key in docker_compose_yml['services']:
+            container_name = docker_compose_yml['services'][key]['container_name']
+            if container_name not in service_names:
                 services.extend([{
-                    "name": sk,
+                    "name": key,
                     "container_name": container_name,
                     "status": get_status(container_name)
                 }])

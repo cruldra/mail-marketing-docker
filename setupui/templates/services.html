@@ -49,9 +49,6 @@
                         <el-row>
                             <el-button type="primary" @click="install" v-if="!props.row.status.installed" round>安装
                             </el-button>
-                            <el-button type="primary" v-if="props.row.status.installed&& !props.row.status.running"
-                                       round>运行
-                            </el-button>
                             <template v-if="props.row.todo_list">
                                 <el-button @click="todo(v,props.row)" v-for="(v,k) in props.row.todo_list "
                                            :type="v.color" round>

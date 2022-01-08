@@ -182,7 +182,11 @@ class DnsManager(IDnsManager, Enum):
     def check_record(self, record: DnsRecord):
         def cloudflare():
             dns_records = self.list(record.host)
-            return any(lambda it: it == record for _ in dns_records)
+
+            def predicate(dns_record):
+                return dns_record == record
+
+            return any(predicate(dns_record) for dns_record in dns_records)
 
         handlers = {"cloudflare": cloudflare}
         if self.code not in handlers:
