@@ -11,10 +11,35 @@ from pathlib import Path
 
 import rich
 from docker.errors import NotFound, ContainerError
+from redis.client import Redis
 from stringcase import snakecase, alphanumcase
 
 from domain import DnsManager, DnsRecord
 from log import logger
+
+
+class MailAccountCacheManager:
+    @staticmethod
+    def list():
+        settings_manager = SettingsManager()
+        return list(settings_manager.json.get('mail_accounts_cache', {}).values())
+
+    @staticmethod
+    def save_or_update(name, pwd, is_administrator):
+        settings_manager = SettingsManager()
+        settings_manager.json.get('mail_accounts_cache', {})[name] = {
+            "name": name,
+            "pwd": pwd,
+            "is_administrator": is_administrator
+        }
+        settings_manager.save()
+
+    @staticmethod
+    def delete(self, name):
+        settings_manager = SettingsManager()
+        if 'mail_accounts_cache' in settings_manager.json:
+            settings_manager.json['mail_accounts_cache'].pop(name, None)
+        settings_manager.save()
 
 
 class MailAccountManager:
@@ -41,11 +66,12 @@ class MailAccountManager:
             if container:
                 container.remove()
 
-    def add(self, name, pwd):
+    def add(self, name, pwd, **kwargs):
         """添加邮箱账户
 
         :param name: 用户名
         :param pwd: 密码
+        :param is_administrator: 是否是管理员
         """
 
         client = docker.from_env()
@@ -59,15 +85,17 @@ class MailAccountManager:
                                               command=f"""setup email add {name} {pwd}""")
             container.wait()
             logger.info(container.logs().decode('utf-8'))
+            MailAccountCacheManager.save_or_update(name, pwd, kwargs.get('is_administrator', False))
         finally:
             if container:
                 container.remove()
 
-    def update(self, name, npwd):
+    def update(self, name, npwd, **kwargs):
         """修改账户密码
 
         :param name: 用户名
         :param npwd: 新密码
+        :param is_administrator: 是否是管理员
         """
 
         client = docker.from_env()
@@ -80,6 +108,8 @@ class MailAccountManager:
                                                       'mode': 'rw'}},
                                               command=f"""setup email update {name} {npwd}""")
             container.wait()
+            logger.info(container.logs().decode('utf-8'))
+            MailAccountCacheManager.save_or_update(name, npwd, kwargs.get('is_administrator', False))
         finally:
             if container:
                 container.remove()
@@ -100,6 +130,8 @@ class MailAccountManager:
                                                       'mode': 'rw'}},
                                               command=f"""setup email del {name}""")
             container.wait()
+            logger.info(container.logs().decode('utf-8'))
+            MailAccountCacheManager.delete(name)
         finally:
             if container:
                 container.remove()
@@ -243,6 +275,49 @@ class SettingsManager:
             }
 
         return list(map(component_mapper, self.json['components']))
+
+
+class PhplistConfiguration:
+    def __init__(self, file):
+        self.file = file
+        self.__var_pattern__ = re.compile(
+            r"""(^|;)\s*\$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)\s*=\s*('?|"?)(.*)\3\s*;""")
+        self.__vals_pattern__ = re.compile(r"""\bdefine\(\s*('|")(.*)\1\s*,\s*('?|"?)(.*)\3\)\s*;""")
+        self.__vars__ = {}
+        self.__vals__ = {}
+        with open(self.file) as file:
+            self.__file_lines__ = file.readlines()
+            for i, line in enumerate(self.__file_lines__):
+                for match in self.__var_pattern__.finditer(line):
+                    self.__vars__[match.group(2)] = i + 1, match.group(4)
+                for match in self.__vals_pattern__.finditer(line):
+                    self.__vals__[match.group(2)] = i + 1, match.group(4)
+
+    # def write(self):
+    #     vars = os.linesep.join(list(map(lambda key: f"${key} = '{self.__vars__[key][1]}';", self.__vars__.keys())))
+    #     vals = os.linesep.join(list(map(lambda key: f"${key} = '{self.__vals__[key][1]}';", self.__vals__.keys())))
+    #     print(vars + vals)
+
+    def __writ__(self):
+        Path(self.file).write_text(os.linesep.join(self.__file_lines__))
+
+    def var(self, name: str, value: str = None):
+        """获取或设置变量,php中变量格式为 $name=value"""
+        if not value:
+            return self.__vars__.get(name, '')[1]
+        else:
+            self.__vars__[name] = self.__vars__.get(name, '')[0], value
+            self.__file_lines__[self.__vars__.get(name, '')[0] - 1] = f"${name} = '{value}';"
+            self.__writ__()
+
+    def val(self, name: str, value: str = None):
+        """获取或设置常量,php中常量格式为 define("name",value);"""
+        if not value:
+            return self.__vals__.get(name, '')[1]
+        else:
+            self.__vals__[name] = self.__vals__.get(name, '')[0], value
+            self.__file_lines__[self.__vals__.get(name, '')[0] - 1] = f'define("{name}","{value}");'
+            self.__writ__()
 
 
 def dns_check(params):

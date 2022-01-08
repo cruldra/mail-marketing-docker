@@ -65,11 +65,105 @@ def install():
 
 
 def __install_phplist__(settings_manager, docker_compose_doc):
-    pass
+    # 将phplist服务描述写入docker-compose.yml
+    logger.info("生成phplist服务描述文件")
+    set_phplist_form = settings_manager.get_form('setPhplist')
+    docker_compose_doc['services']['phplist'] = {
+        "build": "./phplist",
+        "container_name": set_phplist_form.get('container_name', 'phplist'),
+        "ports": [f"{set_phplist_form.get('port', '1231')}:80"],
+        "volumes": [f"{set_phplist_form.get('php_ini', './config/php/php.ini')}:/usr/local/etc/php/php.ini",
+                    f"{set_phplist_form.get('phplist_config_file', './config/phplist/config.php')}:/var/www/html/config/config.php",
+                    "./config/phplist/config_extended.php:/var/www/html/config/config_extended.php",
+                    "./.logs/apache:/var/log/httpd",
+                    "./.logs/php:/var/log/php"],
+        "restart": "always",
+        "networks": ["network"],
+        "environment": ['TZ=Asia/Shanghai'],
+    }
+
+    logger.info("phplist数据库配置")
+    path = os.path.abspath(
+        f"{__file__}/../../{set_phplist_form.get('phplist_config_file', './config/phplist/config.php')}")
+    configuration = tools.PhplistConfiguration(path)
+    if set_phplist_form['db_type'] == 'external':
+        configuration.var("database_host", set_phplist_form['database_host'])
+        configuration.var("database_name", set_phplist_form['database_name'])
+        configuration.var("database_port", set_phplist_form['database_port'])
+        configuration.var("database_user", set_phplist_form['database_user'])
+        configuration.var("database_password", set_phplist_form['database_password'])
+    else:
+        set_database_form = settings_manager.get_form('setDatabase')
+        configuration.var("database_host", 'db')
+        configuration.var("database_name", set_database_form['init_db_name'])
+        configuration.var("database_port", set_database_form['port'])
+        configuration.var("database_user", set_database_form['username'])
+        configuration.var("database_password", set_database_form['password'])
+
+    logger.info("phplist smtp配置")
+    domain_and_ip_form = settings_manager.get_form('domainAndIp')
+    configuration.val("PHPMAILERHOST", f"mail.{domain_and_ip_form['domain']}")
+    configuration.val("PHPMAILERPORT", "25")
+    configuration.val("PHPMAILER_SECURE", "tls")
+
+    administrator_mail_account = next(x for x in tools.MailAccountCacheManager.list() if x['is_administrator'])
+    configuration.var("phpmailer_smtpuser", administrator_mail_account['name'])
+    configuration.var("phpmailer_smtppassword", administrator_mail_account['pwd'])
+
+    # 如果phplist使用docker版的数据库,则需要将数据库容器和phplist容器连接到同一网络
+    if settings_manager.get_component("Database")['checked']:
+        docker_compose_doc['services']['phplist']['depends_on'] = ['db']
+        docker_compose_doc['services']['phplist']['links'] = ['db']
+
+    logger.info("Phplist 安装完成")
 
 
 def __install_db__(settings_manager, docker_compose_doc):
-    pass
+    set_database_form = settings_manager.get_form('setDatabase')
+    logger.info("生成db服务描述文件")
+    db_configs = {
+        "mysql": {
+            "username": "root",
+            "init_db": "MYSQL_DATABASE",
+            "password": "MYSQL_ROOT_PASSWORD",
+            "data_dir": "/var/lib/mysql",
+            "conf_files": ["./config/db/mysql/my.conf:/etc/mysql/conf.d/my.cnf"]
+        },
+        "postgresql": {
+            "username": "postgres",
+            "init_db": "POSTGRES_DB",
+            "password": "POSTGRES_PASSWORD",
+            "data_dir": "/var/lib/postgresql/data",
+            "conf_files": ["./config/db/postgresql/postgresql.conf:/var/lib/postgresql/data/postgresql.conf",
+                           "./config/db/postgresql/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf"],
+        }
+    }
+
+    db_type = set_database_form.get('db_type', 'mysql')
+    docker_compose_doc['services']['db'] = {
+        "image": f"{db_type}:{set_database_form.get('version', '5.5.62')}",
+        "container_name": set_database_form.get('container_name', 'db'),
+        "expose": [f"{set_database_form.get('port', '3306')}"],
+        "volumes": [f"./.db-data:{db_configs[db_type]['data_dir']}"] + db_configs[db_type]['conf_files'],
+        "restart": "always",
+        "networks": ["network"],
+        "environment": ['TZ=Asia/Shanghai', f"{db_configs[db_type]['password']}={set_database_form['password']}",
+                        f"{db_configs[db_type]['init_db']}={set_database_form['init_db_name']}"],
+    }
+    if db_type == "mysql" and set_database_form.get('install_php_myadmin', False):
+        logger.info("生成phpmyadmin服务描述文件")
+        docker_compose_doc['services']['phpmyadmin'] = {
+            "image": 'phpmyadmin/phpmyadmin',
+            "container_name": 'phplist_db_admin',
+            "ports": ['8081:80'],
+            "volumes": [f"./.db-data:{db_configs[db_type]['data_dir']}"] + db_configs[db_type]['conf_files'],
+            "restart": "always",
+            "networks": ["network"],
+            "environment": ['PMA_HOST=db'],
+            "depends_on": ['db'],
+            "links": ['db']
+        }
+    logger.info("数据库服务 安装完成")
 
 
 def __install_mail_server__(settings_manager: tools.SettingsManager, docker_compose_doc):

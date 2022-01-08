@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import re
 import stat
 import subprocess
@@ -33,15 +34,59 @@ import tools
 from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord, DnsException
 from tools import download_file
 
+class RandomTests(unittest.TestCase):
+    def test_random_choise(self):
+        print(random.choice(["primary", "success", "info", "warning", "danger"]))
+class PhplistConfigurationTests(unittest.TestCase):
+    def test_get_var(self):
+        configuration = tools.PhplistConfiguration(
+            "/Users/liuye/DockerProjects/mail-marketing-docker/config/phplist/config.php")
+        self.assertEqual(configuration.var("bounce_protocol"), 'pop')
+        self.assertEqual(configuration.var("database_port"), '3306')
+
+    def test_get_const(self):
+        configuration = tools.PhplistConfiguration(
+            "/Users/liuye/DockerProjects/mail-marketing-docker/config/phplist/config.php")
+        self.assertEqual(configuration.val("PHPMAILER"), '1')
+
+    def test_set_var(self):
+        configuration = tools.PhplistConfiguration(
+            "/Users/liuye/DockerProjects/mail-marketing-docker/config/phplist/config.php")
+        configuration.var("database_host", 'db1')
+
+
+class PhpSourceFilePaseTest(unittest.TestCase):
+    def test_parse(self):
+        define_pattern = re.compile(r"""\bdefine\(\s*('|")(.*)\1\s*,\s*('?|"?)(.*)\3\)\s*;""")
+        assign_pattern = re.compile(
+            r"""(^|;)\s*\$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)\s*=\s*('?|"?)(.*)\3\s*;""")
+
+        # php_vars = {}
+        php_vals = {}
+        for line in open("/Users/liuye/DockerProjects/mail-marketing-docker/config/phplist/config.php"):
+            for match in define_pattern.finditer(line):
+                php_vals[match.group(2)] = match.group(4)
+            # for match in assign_pattern.finditer(line):
+            #     php_vars[match.group(2)] = match.group(4)
+        print(json.dumps(php_vals))
+
+    def test_parse_var(self):
+        p = re.compile(r"""(^|;)\s*\$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)\s*=\s*('|")(.*)\3\s*;""")
+        with open('/Users/liuye/DockerProjects/mail-marketing-docker/config/phplist/config.php', 'r') as file:
+            for line in file.readlines():
+                res = p.match(line)
+                print(res)
+
 
 class DockerClientTests(unittest.TestCase):
     def test_run_container_and_return_log(self):
         client = docker.from_env()
-        container=client.containers.run('ubuntu:latest',  detach=True,  command=f'echo 12121')
+        container = client.containers.run('ubuntu:latest', detach=True, command=f'echo 12121')
         print(container.wait())
         print(container.logs())
         container.remove()
-        #re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', logs.decode("utf-8"))
+        # re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', logs.decode("utf-8"))
+
 
 class MunchTests(unittest.TestCase):
     def test_dict_obj(self):

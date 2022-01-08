@@ -87,13 +87,16 @@
             <el-form-item label="用户名">
                 <el-input v-model="new_mail_account_dialog.form.username" autocomplete="off"></el-input>
             </el-form-item>
-            <el-form-item label="新密码">
+            <el-form-item label="密码">
                 <el-input v-model="new_mail_account_dialog.form.password" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="管理员">
+                <el-switch v-model="new_mail_account_dialog.form.is_administrator"></el-switch>
             </el-form-item>
         </el-form>
         <div slot="footer" class="dialog-footer">
             <el-button @click="new_mail_account_dialog.visible = false">取 消</el-button>
-            <el-button type="primary" @click="add_mail_account">确 定</el-button>
+            <el-button type="primary" @click="add_mail_account">保 存</el-button>
         </div>
     </el-dialog>
 </div>
@@ -123,7 +126,8 @@
                     visible: false,
                     form: {
                         username: '',
-                        password: ''
+                        password: '',
+                        is_administrator: false
                     }
                 }
             }

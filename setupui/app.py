@@ -154,7 +154,8 @@ def add_mail_account():
         mail_account_username = request.form['username'] if "@" in request.form[
             'username'] else f"{request.form['username']}@{domain_and_ip_form['domain']}"
 
-        mail_account_manager.add(mail_account_username, request.form['password'])
+        mail_account_manager.add(mail_account_username, request.form['password'],
+                                 is_administrator=request.form.get('is_administrator', False))
         if mail_account_username not in ",".join(mail_account_manager.list()):
             raise Exception("账户添加失败")
         return {
