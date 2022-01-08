@@ -312,7 +312,7 @@ class PhplistConfiguration:
     #     print(vars + vals)
 
     def __writ__(self):
-        Path(self.file).write_text("".join(self.__file_lines__))
+        Path(self.file).write_text(os.linesep.join(list(map(lambda l: l.strip(), self.__file_lines__))))
 
     def var(self, name: str, value: str = None):
         """获取或设置变量,php中变量格式为 $name=value"""
