@@ -219,7 +219,7 @@ def all_service_up():
         services_file = os.path.abspath(f"{__file__}/../../docker-compose.yml")
         return {
             "code": 0,
-            "data": os.system(f"docker-compose -f {services_file} up")
+            "data": os.system(f"docker-compose -f {services_file} up -d")
         }
     except Exception as e:
         return {
