@@ -305,16 +305,8 @@ def __install_mail_server__(settings_manager: tools.SettingsManager, docker_comp
     logger.info("创建管理员账户")
     client = docker.from_env()
     mail_server_config_dir = os.path.abspath(f"{__file__}/../../{docker_data_dir}/config")
-    try:
-        logs = client.containers.run(image='docker.io/mailserver/docker-mailserver', detach=False, auto_remove=True,
-                                     tty=False,
-                                     stdin_open=False,
-                                     volumes={mail_server_config_dir: {'bind': f'/tmp/docker-mailserver',
-                                                                       'mode': 'rw'}},
-                                     command=f"""setup email add root@{domain} 123456""")
-        logger.info(logs.decode("utf-8"))
-    except ContainerError as e:
-        logger.error(f"创建管理员账户时出现异常 {str(e)}")
+    mail_account_manager = tools.MailAccountManager(mail_server_config_dir)
+    mail_account_manager.add(f"root@{domain}", "123394", is_administrator=True)
     # 添加管理邮箱账户到to_do_list
     settings_manager.add_task_to_component('Docker Mail Server', {
         "name": "manage_mail_accounts",

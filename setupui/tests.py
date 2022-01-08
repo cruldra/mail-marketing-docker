@@ -37,6 +37,9 @@ from tools import download_file
 class RandomTests(unittest.TestCase):
     def test_random_choise(self):
         print(random.choice(["primary", "success", "info", "warning", "danger"]))
+    def test(self):
+        print(len(tools.MailAccountCacheManager.list()))
+        next(x for x in tools.MailAccountCacheManager.list() if x['is_administrator'])
 class PhplistConfigurationTests(unittest.TestCase):
     def test_get_var(self):
         configuration = tools.PhplistConfiguration(
