@@ -316,7 +316,7 @@
                     <el-input v-model="settings.forms.setDatabase.data_dir"></el-input>
                 </el-form-item>
                 <el-form-item label="安装phpmyadmin" prop="install_php_myadmin">
-                    <el-input v-model="settings.forms.setDatabase.install_php_myadmin"></el-input>
+                    <el-switch v-model="settings.forms.setDatabase.install_php_myadmin"></el-switch>
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="previous_step ">上一步</el-button>
