@@ -160,7 +160,6 @@ def __install_db__(settings_manager, docker_compose_doc):
             "image": 'phpmyadmin/phpmyadmin',
             "container_name": 'phplist_db_admin',
             "ports": ['8081:80'],
-            "volumes": [f"./.db-data:{db_configs[db_type]['data_dir']}"] + db_configs[db_type]['conf_files'],
             "restart": "always",
             "networks": ["network"],
             "environment": ['PMA_HOST=db'],

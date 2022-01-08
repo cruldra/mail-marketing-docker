@@ -141,7 +141,7 @@
                     success: (resp) => {
                         if (resp.code === 0) {
                             this.$notify.info({
-                                title: task.label,
+                                title: "启动所有服务",
                                 message: resp.data
                             });
                         } else {
@@ -166,7 +166,7 @@
                             });
                         } else {
                             this.$notify.error({
-                                title: task.label,
+                                title: "停止所有服务",
                                 message: resp.msg
                             });
                         }
