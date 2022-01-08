@@ -10,6 +10,7 @@ import requests
 from pathlib import Path
 
 import rich
+import yaml
 from docker.errors import NotFound, ContainerError
 from redislite import Redis
 from stringcase import snakecase, alphanumcase
@@ -115,7 +116,7 @@ class MailAccountManager:
 
     class CacheManager:
         def __init__(self, **kwargs):
-            self.__redis__=Redis("./redis.db")
+            self.__redis__ = Redis("./redis.db")
             self.__key__ = kwargs.get('key', 'mail_accounts')
 
         def list(self):
@@ -214,7 +215,9 @@ class SettingsManager:
 
         # 名字重复且参数是一个列表的情况下,直接追加参数而不是新建任务
         if task['name'] in component['todo_list'] and isinstance(task['parameters'], list):
-            component['todo_list'][task['name']]['parameters'] += task['parameters']
+            for p in task['parameters']:
+                if not any(lambda p1: p1 == p for p1 in component['todo_list'][task['name']]['parameters']):
+                    component['todo_list'][task['name']]['parameters'] += [p]
         else:
             component['todo_list'][task['name']] = task
 
@@ -265,6 +268,7 @@ class SettingsManager:
             return {
                 "name": component_name,
                 "todo_list": component.get('todo_list', {}),
+                "manage_url": component.get('manage_url', ''),
                 "container_name": container_name,
                 "status": get_status(container_name)
             }
@@ -294,7 +298,7 @@ class PhplistConfiguration:
     #     print(vars + vals)
 
     def __writ__(self):
-        Path(self.file).write_text(os.linesep.join(self.__file_lines__))
+        Path(self.file).write_text("".join(self.__file_lines__))
 
     def var(self, name: str, value: str = None):
         """获取或设置变量,php中变量格式为 $name=value"""

@@ -5,6 +5,7 @@ import os
 import traceback
 from inspect import getmembers, isfunction
 
+import docker
 from flask import Flask, render_template, request, url_for, redirect, Response
 from flask.json import htmlsafe_dumps
 from redislite import Redis
@@ -206,6 +207,34 @@ def del_mail_account():
         }
     except Exception as e:
         traceback.print_exc()
+        return {
+            "code": 1,
+            "msg": str(e)
+        }
+
+
+@app.route("/all_service_up")
+def all_service_up():
+    try:
+        return {
+            "code": 0,
+            "data": os.system("docker-compose -f ../../docker-compose.yml up")
+        }
+    except Exception as e:
+        return {
+            "code": 1,
+            "msg": str(e)
+        }
+
+
+@app.route("/all_service_down")
+def all_service_down():
+    try:
+        return {
+            "code": 0,
+            "data": os.system("docker-compose -f ../../docker-compose.yml down")
+        }
+    except Exception as e:
         return {
             "code": 1,
             "msg": str(e)

@@ -33,10 +33,29 @@ import app
 import tools
 from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord, DnsException
 from tools import download_file
+
+
+class DictTests(unittest.TestCase):
+    def test_eq(self):
+        d1 = {
+            "host": "9l2z.xyz",
+            "name": "mail",
+            "type": 1,
+            "value": "103.47.113.84"
+        }
+        d2 = {
+            "host": "9l2z.xyz",
+            "name": "mail",
+            "type": 1,
+            "value": "103.47.113.84"
+        }
+        self.assertTrue(d1 == d2)
+
+
 class MailAccountManagerTests(unittest.TestCase):
     def test_cache(self):
-        cache_manager=tools.MailAccountManager.CacheManager()
-        cache_manager.save_or_update("hasaiki@gmail.com","123394",True)
+        cache_manager = tools.MailAccountManager.CacheManager()
+        cache_manager.save_or_update("hasaiki@gmail.com", "123394", True)
         cache_manager.save_or_update("root@gmail.com", "123394", True)
         cache_manager.save_or_update("root@gmail.com", "123456", True)
         cache_manager.delete("hasaiki@gmail.com")
@@ -49,12 +68,16 @@ class MailAccountManagerTests(unittest.TestCase):
         #     "is_administrator": True
         # }))
 
+
 class RandomTests(unittest.TestCase):
     def test_random_choise(self):
         print(random.choice(["primary", "success", "info", "warning", "danger"]))
+
     def test(self):
         print(len(tools.MailAccountCacheManager.list()))
         next(x for x in tools.MailAccountCacheManager.list() if x['is_administrator'])
+
+
 class PhplistConfigurationTests(unittest.TestCase):
     def test_get_var(self):
         configuration = tools.PhplistConfiguration(
@@ -194,7 +217,8 @@ class CallShellCommandTests(unittest.TestCase):
         # print(os.system("""
         # cat  /Users/liuye/fsdownload/mail.txt
         # """))
-        print(os.system("which ngrok"))
+        #print(os.system("which ngrok"))
+        print(os.system("docker-compose -f "))
 
     def test_cat_mail_txt(self):
         pattern = re.compile(r'\"(.*)\"')

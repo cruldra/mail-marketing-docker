@@ -64,7 +64,7 @@ def install():
     logger.info("all_done")
 
 
-def __install_phplist__(settings_manager, docker_compose_doc):
+def __install_phplist__(settings_manager: tools.SettingsManager, docker_compose_doc):
     # 将phplist服务描述写入docker-compose.yml
     logger.info("生成phplist服务描述文件")
     set_phplist_form = settings_manager.get_form('setPhplist')
@@ -116,6 +116,9 @@ def __install_phplist__(settings_manager, docker_compose_doc):
         docker_compose_doc['services']['phplist']['depends_on'] = ['db']
         docker_compose_doc['services']['phplist']['links'] = ['db']
 
+    phplist_component = settings_manager.get_component('phpList')
+    phplist_component['manage_url'] = f"http://{domain_and_ip_form['ip']}:{set_phplist_form.get('port', '1231')}/admin"
+    settings_manager.save()
     logger.info("Phplist 安装完成")
 
 
@@ -164,6 +167,10 @@ def __install_db__(settings_manager, docker_compose_doc):
             "depends_on": ['db'],
             "links": ['db']
         }
+        database_component = settings_manager.get_component('Database')
+        domain_and_ip_form = settings_manager.get_form('domainAndIp')
+        database_component['manage_url'] = f"http://{domain_and_ip_form['ip']}:8081"
+        settings_manager.save()
     logger.info("数据库服务 安装完成")
 
 
