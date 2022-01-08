@@ -223,6 +223,8 @@ class SettingsManager:
 
     def get_services(self):
         """获取服务列表"""
+        p = Path(os.path.abspath(__file__ + "/../../docker-compose.yml"))
+        docker_compose_yml = yaml.safe_load(p.read_text())
 
         def get_container_name(component_name):
             """获取组件的docker容器名称
@@ -244,10 +246,8 @@ class SettingsManager:
 
         def get_status(container_name):
             client = docker.from_env()
-            try:
-                installed = client.containers.get(container_name) is not None
-            except NotFound as e:
-                installed = False
+            installed = any(lambda service: service['container_name'] == container_name for service in
+                            docker_compose_yml['services'])
             running = False if not installed else client.containers.get(container_name).status == "running"
             label = None
             if not installed and not running:
@@ -274,16 +274,14 @@ class SettingsManager:
             }
 
         services = list(map(component_mapper, self.json['components']))
-        p = Path(os.path.abspath(__file__ + "/../../docker-compose.yml"))
-        docker_compose_yml = yaml.safe_load(p.read_text())
         for sk in docker_compose_yml['services'].keys():
             container_name = docker_compose_yml['services'][sk]['container_name']
             if not any(lambda service: service['container_name'] == container_name for _ in services):
-                services += [{
+                services.extend([{
                     "name": sk,
                     "container_name": container_name,
                     "status": get_status(container_name)
-                }]
+                }])
         return services
 
 
