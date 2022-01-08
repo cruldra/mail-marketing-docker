@@ -27,7 +27,9 @@ class MailAccountCacheManager:
     @staticmethod
     def save_or_update(name, pwd, is_administrator):
         settings_manager = SettingsManager()
-        settings_manager.json.get('mail_accounts_cache', {})[name] = {
+        if 'mail_accounts_cache' not in settings_manager.json:
+            settings_manager.json['mail_accounts_cache'] = {}
+        settings_manager.json['mail_accounts_cache'][name] = {
             "name": name,
             "pwd": pwd,
             "is_administrator": is_administrator
@@ -35,7 +37,7 @@ class MailAccountCacheManager:
         settings_manager.save()
 
     @staticmethod
-    def delete(self, name):
+    def delete(name):
         settings_manager = SettingsManager()
         if 'mail_accounts_cache' in settings_manager.json:
             settings_manager.json['mail_accounts_cache'].pop(name, None)
