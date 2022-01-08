@@ -6,6 +6,7 @@ import traceback
 from inspect import getmembers, isfunction
 
 import docker
+from docker.errors import NotFound
 from flask import Flask, render_template, request, url_for, redirect, Response
 from flask.json import htmlsafe_dumps
 from redislite import Redis
@@ -218,8 +219,15 @@ def all_service_up():
     try:
         settings_manager = tools.SettingsManager()
         client = docker.from_env()
-        [(lambda service: client.containers.get(service['container_name']).remove())(service) for service in
-         settings_manager.get_services()]
+
+        def del_container(service):
+            try:
+                container = client.containers.get(service['container_name'])
+                container.remove()
+            except NotFound:
+                pass
+
+        [del_container(service) for service in settings_manager.get_services()]
         services_file = os.path.abspath(f"{__file__}/../../docker-compose.yml")
         return {
             "code": 0,
