@@ -11,37 +11,11 @@ from pathlib import Path
 
 import rich
 from docker.errors import NotFound, ContainerError
-from redis.client import Redis
+from redislite import Redis
 from stringcase import snakecase, alphanumcase
 
 from domain import DnsManager, DnsRecord
 from log import logger
-
-
-class MailAccountCacheManager:
-    @staticmethod
-    def list():
-        settings_manager = SettingsManager()
-        return list(settings_manager.json.get('mail_accounts_cache', {}).values())
-
-    @staticmethod
-    def save_or_update(name, pwd, is_administrator):
-        settings_manager = SettingsManager()
-        if 'mail_accounts_cache' not in settings_manager.json:
-            settings_manager.json['mail_accounts_cache'] = {}
-        settings_manager.json['mail_accounts_cache'][name] = {
-            "name": name,
-            "pwd": pwd,
-            "is_administrator": is_administrator
-        }
-        settings_manager.save()
-
-    @staticmethod
-    def delete(name):
-        settings_manager = SettingsManager()
-        if 'mail_accounts_cache' in settings_manager.json:
-            settings_manager.json['mail_accounts_cache'].pop(name, None)
-        settings_manager.save()
 
 
 class MailAccountManager:
@@ -49,6 +23,7 @@ class MailAccountManager:
 
     def __init__(self, config_dir: str):
         self.__docker_mail_server_config_dir__ = config_dir
+        self.cache = self.CacheManager()
 
     def list(self):
         """获取邮件账户列表"""
@@ -87,7 +62,7 @@ class MailAccountManager:
                                               command=f"""setup email add {name} {pwd}""")
             container.wait()
             logger.info(container.logs().decode('utf-8'))
-            MailAccountCacheManager.save_or_update(name, pwd, kwargs.get('is_administrator', False))
+            self.cache.save_or_update(name, pwd, kwargs.get('is_administrator', False))
         finally:
             if container:
                 container.remove()
@@ -111,7 +86,7 @@ class MailAccountManager:
                                               command=f"""setup email update {name} {npwd}""")
             container.wait()
             logger.info(container.logs().decode('utf-8'))
-            MailAccountCacheManager.save_or_update(name, npwd, kwargs.get('is_administrator', False))
+            self.cache.save_or_update(name, npwd, kwargs.get('is_administrator', False))
         finally:
             if container:
                 container.remove()
@@ -133,10 +108,29 @@ class MailAccountManager:
                                               command=f"""setup email del {name}""")
             container.wait()
             logger.info(container.logs().decode('utf-8'))
-            MailAccountCacheManager.delete(name)
+            self.cache.delete(name)
         finally:
             if container:
                 container.remove()
+
+    class CacheManager:
+        def __init__(self, **kwargs):
+            self.__redis__=Redis("./redis.db")
+            self.__key__ = kwargs.get('key', 'mail_accounts')
+
+        def list(self):
+            values = self.__redis__.hvals(self.__key__)
+            return list(map(lambda s: json.loads(s), values)) if values else []
+
+        def save_or_update(self, name, pwd, is_administrator):
+            self.__redis__.hset(self.__key__, name, json.dumps({
+                "name": name,
+                "pwd": pwd,
+                "is_administrator": is_administrator
+            }))
+
+        def delete(self, name):
+            self.__redis__.hdel(self.__key__, name)
 
 
 class SettingsManager:

@@ -106,7 +106,8 @@ def __install_phplist__(settings_manager, docker_compose_doc):
     configuration.val("PHPMAILERPORT", "25")
     configuration.val("PHPMAILER_SECURE", "tls")
 
-    administrator_mail_account = next(x for x in tools.MailAccountCacheManager.list() if x['is_administrator'])
+    administrator_mail_account = next(
+        x for x in tools.MailAccountManager.CacheManager().list() if x['is_administrator'])
     configuration.var("phpmailer_smtpuser", administrator_mail_account['name'])
     configuration.var("phpmailer_smtppassword", administrator_mail_account['pwd'])
 

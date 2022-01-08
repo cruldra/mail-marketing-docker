@@ -33,6 +33,21 @@ import app
 import tools
 from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord, DnsException
 from tools import download_file
+class MailAccountManagerTests(unittest.TestCase):
+    def test_cache(self):
+        cache_manager=tools.MailAccountManager.CacheManager()
+        cache_manager.save_or_update("hasaiki@gmail.com","123394",True)
+        cache_manager.save_or_update("root@gmail.com", "123394", True)
+        cache_manager.save_or_update("root@gmail.com", "123456", True)
+        cache_manager.delete("hasaiki@gmail.com")
+        print(cache_manager.list())
+
+        # redis = Redis('./redis.db')
+        # redis.hset("mail_accounts","hasaiki@gmial.com",json.dumps({
+        #     "name": "hasaiki@gmail.com",
+        #     "pwd": "123394",
+        #     "is_administrator": True
+        # }))
 
 class RandomTests(unittest.TestCase):
     def test_random_choise(self):
