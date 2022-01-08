@@ -216,6 +216,10 @@ def del_mail_account():
 @app.route("/all_service_up")
 def all_service_up():
     try:
+        settings_manager = tools.SettingsManager()
+        client = docker.from_env()
+        [(lambda service: client.containers.get(service['container_name']).remove())(service) for service in
+         settings_manager.get_services()]
         services_file = os.path.abspath(f"{__file__}/../../docker-compose.yml")
         return {
             "code": 0,

@@ -273,7 +273,18 @@ class SettingsManager:
                 "status": get_status(container_name)
             }
 
-        return list(map(component_mapper, self.json['components']))
+        services = list(map(component_mapper, self.json['components']))
+        p = Path(os.path.abspath(__file__ + "/../../docker-compose.yml"))
+        docker_compose_yml = yaml.safe_load(p.read_text())
+        for sk in docker_compose_yml['services'].keys():
+            container_name = docker_compose_yml['services'][sk]['container_name']
+            if not any(lambda service: service['container_name'] == container_name for _ in services):
+                services += [{
+                    "name": sk,
+                    "container_name": container_name,
+                    "status": get_status(container_name)
+                }]
+        return services
 
 
 class PhplistConfiguration:

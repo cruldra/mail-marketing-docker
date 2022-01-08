@@ -34,7 +34,10 @@ import tools
 from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord, DnsException
 from tools import download_file
 
-
+class ArrayStreamTests(unittest.TestCase):
+    def test_foreach_lambda(self):
+        #[(lambda x: print(x))(x) for x in range(10)]
+        [(lambda x: print(x))(x) for x in range(10)]
 class DictTests(unittest.TestCase):
     def test_eq(self):
         d1 = {
