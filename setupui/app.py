@@ -216,9 +216,10 @@ def del_mail_account():
 @app.route("/all_service_up")
 def all_service_up():
     try:
+        services_file = os.path.abspath(f"{__file__}/../../docker-compose.yml")
         return {
             "code": 0,
-            "data": os.system("docker-compose -f ../../docker-compose.yml up")
+            "data": os.system(f"docker-compose -f {services_file} up")
         }
     except Exception as e:
         return {
@@ -230,9 +231,10 @@ def all_service_up():
 @app.route("/all_service_down")
 def all_service_down():
     try:
+        services_file = os.path.abspath(f"{__file__}/../../docker-compose.yml")
         return {
             "code": 0,
-            "data": os.system("docker-compose -f ../../docker-compose.yml down")
+            "data": os.system(f"docker-compose -f {services_file} down")
         }
     except Exception as e:
         return {
