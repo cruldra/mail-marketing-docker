@@ -61,7 +61,7 @@
     "setDatabase": {
       "activeWith": [
         {
-          "data_dir": "./.mysqldata",
+          "data_dir": "./.db-data",
           "install_php_myadmin": true,
           "port": 3306,
           "prop": "db_type",
@@ -70,7 +70,7 @@
           "version": "5.5.62"
         },
         {
-          "data_dir": "./.pgdata",
+          "data_dir": "./.db-data",
           "port": 5432,
           "prop": "db_type",
           "username": "postgres",
@@ -79,7 +79,7 @@
         }
       ],
       "container_name": "db",
-      "data_dir": "./.mysqldata",
+      "data_dir": "./.db-data",
       "db_type": "mysql",
       "init_db_name": "phplist",
       "install_php_myadmin": true,

@@ -111,7 +111,7 @@ def __install_phplist__(settings_manager, docker_compose_doc):
     configuration.var("phpmailer_smtppassword", administrator_mail_account['pwd'])
 
     # 如果phplist使用docker版的数据库,则需要将数据库容器和phplist容器连接到同一网络
-    if settings_manager.get_component("Database")['checked']:
+    if settings_manager.get_component("Database")['checked'] and set_phplist_form['db_type'] == 'docker':
         docker_compose_doc['services']['phplist']['depends_on'] = ['db']
         docker_compose_doc['services']['phplist']['links'] = ['db']
 
