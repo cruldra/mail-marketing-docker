@@ -270,7 +270,7 @@ def __install_mail_server__(settings_manager: tools.SettingsManager, docker_comp
                                          command=f"""certonly  --noninteractive \
                                                           --agree-tos -m root@{domain} --preferred-challenges dns --expand  --dns-cloudflare  --dns-cloudflare-credentials /cloudflare.ini  \
                                                           -d *.{domain}  --server https://acme-v02.api.letsencrypt.org/directory""")
-            logger.info(logs)
+            logger.info(logs.decode("utf-8"))
         except ContainerError as e:
             logger.error(f"申请证书时出现异常:{str(e)}")
     else:

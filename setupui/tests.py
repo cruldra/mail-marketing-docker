@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import random
 import re
@@ -28,12 +29,33 @@ from redislite import Redis
 from stringcase import snakecase, alphanumcase
 from termcolor import colored
 from bs4 import BeautifulSoup
-
+from functools import partial, partialmethod
 import app
 import tools
 from domain import get_name_server, DnsManager, get_dns_manager, DnsRecord, DnsException
 from tools import download_file
 
+
+class LoggerTests(unittest.TestCase):
+    def test_root_logger(self):
+        logging.basicConfig(level=logging.INFO)
+        logging.info("hello")
+
+    def test_get_root_logger_handler(self):
+        print(logging.getLogger("11").handlers)
+
+    def test_custom_logging_level(self):
+        logging.TRACE = 5
+        logging.addLevelName(logging.TRACE, 'TRACE')
+        logging.Logger.trace = partialmethod(logging.Logger.log, logging.TRACE)
+        logging.trace = partial(logging.log, logging.TRACE)
+
+        logging.basicConfig(level=logging.TRACE)
+        logging.trace("hello")
+
+    def test_simple_formatter(self):
+        logging.basicConfig(level=logging.INFO,format='%(asctime)s : %(levelname)s : %(name)s : %(message)s %(pathname)s')
+        logging.info("hello")
 
 class ArrayStreamTests(unittest.TestCase):
     def test_foreach_lambda(self):
