@@ -15,7 +15,7 @@ mysql web管理界面
 ## 构建及启动
 ### 安装必需的软件
 ```bash
-apt update && apt install -y git docker.io docker-compose
+apt update && apt install -y git docker.io docker-compose make
 ```
 
 ### 下载源代码
