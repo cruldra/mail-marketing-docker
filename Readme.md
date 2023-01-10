@@ -22,7 +22,7 @@ apt update && apt install -y git docker.io docker-compose make
 ```bash
 mkdir -p /app && \
 cd /app && \
-git clone https://github.com/cruldra/mail-marketing-docker.git
+git clone --recursive https://github.com/cruldra/mail-marketing-docker.git
 ```
 ### 使用可视化界面
 ```bash
