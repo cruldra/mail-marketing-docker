@@ -6,7 +6,7 @@ all: build up
 test:
 	echo $(PROJECT_DIR) && echo $(SETUPUI_DIR)
 ui:
-	docker run  --rm --name create_venv -v $(SETUPUI_DIR):/app continuumio/miniconda3 conda create  -p /app/.venv python=3.9 && \
+	docker run  --rm --name create_venv -v $(SETUPUI_DIR):/app continuumio/miniconda3 conda create  -p /app/.venv python=3.10 && \
     cd $(SETUPUI_DIR) && .venv/bin/python -m pip install --no-cache-dir -r requirements.txt  && \
     cd $(SETUPUI_DIR) && (mkdir .logs || true) && (touch .logs/setupui.log || true) && \
     cd $(SETUPUI_DIR) && .venv/bin/python app.py
